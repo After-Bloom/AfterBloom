@@ -1,0 +1,259 @@
+{
+ "note": "HOLDOUT: written after threshold tuning and never used to tune. Run once per change.",
+ "cases": [
+  [
+   "my tummy hurts so much I am scared",
+   "m",
+   "severe_belly_pain,severe_pain"
+  ],
+  [
+   "I cant stop shaking and I feel burning hot",
+   "m",
+   "fever_chills,fever",
+   "rf"
+  ],
+  [
+   "there is an awful smell coming from down there",
+   "m",
+   "lochia_smell,foul_discharge"
+  ],
+  [
+   "blood is running down my legs",
+   "m",
+   "heavy_bleeding",
+   "rf"
+  ],
+  [
+   "my c-section scar is oozing yellow stuff",
+   "m",
+   "wound_infection"
+  ],
+  [
+   "I am not able to do anything, crying every day",
+   "m",
+   "low_mood,tearful"
+  ],
+  [
+   "my heart is beating really fast even when resting",
+   "m",
+   "palpitations"
+  ],
+  [
+   "I feel too weak to stand",
+   "m",
+   "dizzy,pale_weak,tired,fainting"
+  ],
+  [
+   "face looks puffy since morning",
+   "m",
+   "swelling_face_hands"
+  ],
+  [
+   "mere dono pair sooj gaye hain",
+   "m",
+   "swollen_feet"
+  ],
+  [
+   "bachche ko doodh pilate waqt bahut dard hota hai",
+   "m",
+   "sore_nipples,cracked_nipples"
+  ],
+  [
+   "breast feels like a hot rock and I have chills",
+   "m",
+   "breast_red,breast_engorged,fever_chills"
+  ],
+  [
+   "I have not slept in two nights even though baby is asleep",
+   "m",
+   "no_sleep"
+  ],
+  [
+   "mujhe kuch khane ka mann nahi karta",
+   "m",
+   "cant_eat"
+  ],
+  [
+   "I keep getting a throbbing headache on one side",
+   "m",
+   "headache"
+  ],
+  [
+   "peshab karte waqt dard aur jalan",
+   "m",
+   "urine_burn"
+  ],
+  [
+   "I leak urine when I laugh",
+   "m",
+   "leaking_urine"
+  ],
+  [
+   "my periods are back after two months",
+   "m",
+   "period_back"
+  ],
+  [
+   "I am constantly irritated with everyone",
+   "m",
+   "irritable"
+  ],
+  [
+   "mujhe apne baby ke saath koi connection feel nahi hota",
+   "m",
+   "no_bond"
+  ],
+  [
+   "I feel like a failure and everyone would be better off without me",
+   "m",
+   "self_harm",
+   "rf"
+  ],
+  [
+   "why bother living any more",
+   "m",
+   "self_harm",
+   "rf"
+  ],
+  [
+   "pairon mein sujan aur ek taraf dard hai",
+   "m",
+   "calf_swelling,swollen_feet"
+  ],
+  [
+   "painful to pass stool and I am constipated",
+   "m",
+   "constipation,piles"
+  ],
+  [
+   "bawasir se khoon aa raha hai",
+   "m",
+   "piles"
+  ],
+  [
+   "my belly looks like I am still pregnant",
+   "m",
+   "belly_soft"
+  ],
+  [
+   "it is painful to have sex",
+   "m",
+   "sex_pain"
+  ],
+  [
+   "my hair is coming out in clumps",
+   "m",
+   "hair_fall,hair_loss_heavy"
+  ],
+  [
+   "I sweat so much at night my sheets are wet",
+   "m",
+   "night_sweats"
+  ],
+  [
+   "my newborn is breathing really quickly",
+   "b",
+   "b_fast_breathing",
+   "rf"
+  ],
+  [
+   "baby has not had a wet nappy since last night",
+   "b",
+   "b_no_wet"
+  ],
+  [
+   "baby's eyes look yellow",
+   "b",
+   "b_jaundice"
+  ],
+  [
+   "baby is burning up",
+   "b",
+   "b_fever,b_temp",
+   "rf"
+  ],
+  [
+   "baby ka pet bahut phoola hua hai aur ulti kar raha hai",
+   "b",
+   "b_swollen_belly,b_vomit"
+  ],
+  [
+   "baby is crying non stop and will not settle",
+   "b",
+   "b_cry"
+  ],
+  [
+   "baby sleeps and will not wake up for feeds",
+   "b",
+   "b_drowsy,b_sleepy"
+  ],
+  [
+   "baby ki naabhi se badbu aa rahi hai",
+   "b",
+   "b_cord_bleed,b_cord"
+  ],
+  [
+   "red bumps all over baby's body",
+   "b",
+   "b_rash"
+  ],
+  [
+   "baby ka potty hara hai",
+   "b",
+   "b_stool_colour"
+  ],
+  [
+   "baby throws up after every feed",
+   "b",
+   "b_vomit,b_spit,b_reflux"
+  ],
+  [
+   "baby has blood in his diaper",
+   "b",
+   "b_blood_stool"
+  ],
+  [
+   "baby's lips turned bluish",
+   "b",
+   "b_blue",
+   "rf"
+  ],
+  [
+   "baby is not taking the breast at all",
+   "b",
+   "b_not_feeding",
+   "rf"
+  ],
+  [
+   "baby ko jhatke aa rahe hain",
+   "b",
+   "b_convulsion,b_startle",
+   "rf"
+  ],
+  [
+   "what is your refund policy",
+   "m",
+   ""
+  ],
+  [
+   "I need to renew my insurance",
+   "m",
+   ""
+  ],
+  [
+   "kal ka match kaun jeeta",
+   "m",
+   ""
+  ],
+  [
+   "good night",
+   "m",
+   ""
+  ],
+  [
+   "book a taxi for tomorrow",
+   "m",
+   ""
+  ]
+ ]
+}

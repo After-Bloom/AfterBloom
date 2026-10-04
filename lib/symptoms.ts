@@ -1,5 +1,8 @@
 // Triage table. In production this lives in the database so a clinician can edit it.
 // PLACEHOLDER: pending sign-off by the team's clinical advisor (see "To Confirm Before Submission").
+import { AREA_LABELS, AREA_OF, COMBOS, EXTRA, EXTRA_KEYWORDS, FOLLOWUPS } from "./symptoms-extra";
+import { HI } from "./hi";
+
 export type Level = "RED" | "AMBER" | "GREEN";
 export type Symptom = {
   id: string;
@@ -8,6 +11,9 @@ export type Symptom = {
   level: Level;
   keywords: string[]; // English, Hindi (romanised) and Hinglish
   tip?: string; // prewritten self-care text (GREEN)
+  hi?: string; // Hindi label
+  tipHi?: string; // Hindi tip
+  area?: string; // body-area group for tap-first browsing
 };
 
 const S = (id: string, label: string, who: "mother" | "baby", level: Level, keywords: string[], tip?: string): Symptom => ({ id, label, who, level, keywords, tip });
@@ -92,4 +98,16 @@ const DEVA: Record<string, string[]> = {
 };
 SYMPTOMS.forEach((s) => s.keywords.push(...(DEVA[s.id] ?? [])));
 
-export const bySymptomId = (id: string) => SYMPTOMS.find((s) => s.id === id)!;
+// Expanded list, follow-ups and combos live in their own file (clinician-editable data in production).
+SYMPTOMS.push(...EXTRA);
+SYMPTOMS.forEach((s) => { s.area ??= AREA_OF[s.id]; s.keywords.push(...(EXTRA_KEYWORDS[s.id] ?? [])); });
+
+// Make every new label, tip, question and area name translatable (existing translations win).
+const reg = (en: string, hi: string | undefined) => { if (hi && HI[en] === undefined) HI[en] = hi; };
+SYMPTOMS.forEach((s) => { reg(s.label, s.hi); if (s.tip) reg(s.tip, s.tipHi); });
+Object.values(AREA_LABELS).forEach((a) => reg(a.en, a.hi));
+Object.values(FOLLOWUPS).flat().forEach((f) => { reg(f.q, f.hi); f.options.forEach((o) => reg(o.label, o.hi)); });
+COMBOS.forEach((c) => reg(c.why, c.hi));
+
+const BY_ID = new Map(SYMPTOMS.map((s) => [s.id, s]));
+export const bySymptomId = (id: string) => BY_ID.get(id)!;

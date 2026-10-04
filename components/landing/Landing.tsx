@@ -115,18 +115,19 @@ export function Landing() {
             <div className="h-[310px] shrink-0 md:order-2 md:h-[520px] md:w-1/2">
               {reduce && <div className="mx-auto aspect-[400/460] h-full max-h-full"><Illustration still idle={false} label={tr("A mother holding her baby, wrapped in a dupatta")} /></div>}
             </div>
-            <m.div variants={stagger(0.15)} initial="hidden" animate="show" className="max-w-xl md:order-1 md:w-1/2">
-              <m.p variants={rise} className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">{tr("Postpartum care for Indian mothers")}</m.p>
+            {/* above the fold: CSS fades only, so the text is visible as soon as the HTML paints */}
+            <div className="max-w-xl md:order-1 md:w-1/2">
+              <p className="mb-3 animate-fadeUp text-sm font-bold uppercase tracking-widest text-primary">{tr("Postpartum care for Indian mothers")}</p>
               <h1 className="text-[2rem] font-semibold leading-[1.15] sm:text-4xl md:text-5xl">
-                <m.span variants={rise} className="block">{lines[0]}</m.span>
-                <m.span variants={rise} className="mt-1 block text-primary">{lines[1]}</m.span>
+                <span className="block animate-fadeUp [animation-delay:120ms]">{lines[0]}</span>
+                <span className="mt-1 block animate-fadeUp text-primary [animation-delay:260ms]">{lines[1]}</span>
               </h1>
-              <m.p variants={rise} className="mt-4 max-w-md text-lg text-ink-muted">{tr("A care companion for mothers, their families and their babies.")}</m.p>
-              <m.div variants={rise} className="mt-6 flex flex-wrap items-center gap-3">
+              <p className="mt-4 max-w-md animate-fadeUp text-lg text-ink-muted [animation-delay:400ms]">{tr("A care companion for mothers, their families and their babies.")}</p>
+              <div className="mt-6 flex animate-fadeUp flex-wrap items-center gap-3 [animation-delay:520ms]">
                 <m.a whileTap={tap} href="/home" onClick={go("/home", "mother")} className="btn-primary !px-7 !py-3.5 text-base">{tr("Start your check-in")}<ArrowRight className="h-5 w-5" aria-hidden /></m.a>
                 <a href="#why" className="btn-ghost">{tr("Why we exist")}<ChevronDown className="h-4 w-4" aria-hidden /></a>
-              </m.div>
-            </m.div>
+              </div>
+            </div>
           </section>
 
           <section id="why" className="relative z-0 px-5 pb-24 pt-[40vh] md:px-12 md:pt-24 lg:px-20" aria-labelledby="why-h">

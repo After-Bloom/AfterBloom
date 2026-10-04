@@ -31,3 +31,10 @@ export const stagger = (delay = 0): Variants => ({
 
 export const tap = { scale: 0.96, transition: spring.snappy };
 export const hover = { y: -3, transition: spring.snappy };
+
+/** Step-to-step slide (check-in, EPDS). Exit is fast so the next step is never kept waiting. */
+export const slide = (dir: number) => ({
+  initial: { opacity: 0, x: dir * 28 },
+  animate: { opacity: 1, x: 0, transition: spring.gentle },
+  exit: { opacity: 0, x: dir * -28, transition: { duration: dur.exit, ease } },
+});

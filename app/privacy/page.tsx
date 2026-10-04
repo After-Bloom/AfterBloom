@@ -29,6 +29,7 @@ export default function Privacy() {
         <Toggle on={s.consent.shareWithPro} onChange={(v) => set((p) => ({ ...p, consent: { ...p.consent, shareWithPro: v } }))} label="Share check-in trends with my professional" />
         <Toggle on={s.consent.emergencyAlert} onChange={(v) => set((p) => ({ ...p, consent: { ...p.consent, emergencyAlert: v } }))} label="Alert my emergency contact on a RED result" hint={s.consent.emergencyContact} />
         <Toggle on={s.consent.familyNote} onChange={(v) => set((p) => ({ ...p, consent: { ...p.consent, familyNote: v } }))} label={'Weekly "how to help" note to family'} />
+        <Toggle on={!!s.consent.cloudMatch} onChange={(v) => set((p) => ({ ...p, consent: { ...p.consent, cloudMatch: v } }))} label="Smarter symptom matching" hint="Sends the words you type (never your name) to our matching service so more ways of describing a symptom are understood. Nothing is stored. Emergency checks always run on your phone first." />
       </div>
 
       <div className="card">

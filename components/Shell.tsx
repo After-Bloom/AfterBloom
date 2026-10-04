@@ -8,7 +8,7 @@ import { StoreProvider, useApp, Role, daysSince } from "@/lib/store";
 import { navFor, HOME_BY_ROLE } from "@/lib/features";
 import { useTr } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
-import { rise, spring, tap } from "@/lib/motion";
+import { spring, tap } from "@/lib/motion";
 import { MotionProvider } from "./MotionProvider";
 import { CrisisScreen } from "./Crisis";
 import { LockScreen } from "./LockScreen";
@@ -16,6 +16,8 @@ import { LangToggle } from "./LangToggle";
 
 const HOME: Record<Role, string> = HOME_BY_ROLE;
 const NAV_KEY = "ab.nav";
+// exact match or a real sub-route, so "/check" is not active on "/checkin"
+const on = (path: string, href: string) => path === href || path.startsWith(href + "/");
 
 function Inner({ children }: { children: React.ReactNode }) {
   const { s, set, ready, crisis, openCrisis, locked, setLocked } = useApp();
@@ -92,7 +94,7 @@ function Inner({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="flex-1 space-y-1 px-3 pb-4">
           <NavLink href={HOME[s.role]} icon={Home} label={tr("Home")} active={path === HOME[s.role]} i={0} open={nav} />
-          {items.filter((f) => f.href !== HOME[s.role]).map((f, i) => <NavLink key={f.href} href={f.href} icon={f.icon} label={tr(f.title)} active={path.startsWith(f.href)} i={i + 1} open={nav} />)}
+          {items.filter((f) => f.href !== HOME[s.role]).map((f, i) => <NavLink key={f.href} href={f.href} icon={f.icon} label={tr(f.title)} active={on(path, f.href)} i={i + 1} open={nav} />)}
         </nav>
         <div className="space-y-3 border-t border-line p-4 text-xs text-ink-muted">
           <div className="flex items-center gap-2 md:hidden">{RoleSelect}{ThemeBtn("sm:hidden")}</div>
@@ -101,14 +103,14 @@ function Inner({ children }: { children: React.ReactNode }) {
       </aside>
 
       <main id="main" tabIndex={-1} className={`min-h-[calc(100dvh-4rem)] transition-[padding] duration-300 ease-out ${nav ? "lg:pl-72" : ""}`}>
-        <m.div key={path} variants={rise} initial="hidden" animate="show" className="px-4 py-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:px-10 md:py-8 lg:pb-12">
+        <div key={path} className="animate-fadeUp px-4 py-6 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:px-10 md:py-8 lg:pb-12">
           {ready ? children : <p className="text-ink-muted">{tr("Loading…")}</p>}
-        </m.div>
+        </div>
       </main>
 
       <nav aria-label={tr("Main")} className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {bottom.map((b) => {
-          const active = path.startsWith(b.href);
+          const active = on(path, b.href);
           return (
             <Link key={b.href} href={b.href} aria-current={active ? "page" : undefined} className={`relative flex min-h-16 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[11px] font-semibold leading-tight transition ${active ? "text-primary" : "text-ink-muted"}`}>
               {active && <m.span layoutId="bottom-nav-pill" transition={spring.snappy} className="absolute inset-x-3 top-1.5 -z-0 h-8 rounded-full bg-plum-100" />}

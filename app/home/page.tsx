@@ -8,6 +8,7 @@ import { EPDS_SCHEDULE } from "@/lib/epds";
 import { VACCINES } from "@/lib/vaccines";
 import { stageText, weekData } from "@/lib/report";
 import { Sparkle } from "@/components/fx";
+import { BloomProgress } from "@/components/BloomProgress";
 
 const QUICK = [
   { icon: Stethoscope, label: "Is this normal?", hint: "Check a symptom", href: "/check" },
@@ -102,9 +103,12 @@ export default function Home() {
         <div className="space-y-5">
           {/* Gentle week: presence, not scores */}
           <section aria-labelledby="week-h" className="rounded-3xl border border-plum-100 bg-white p-5 shadow-[0_10px_30px_-14px_rgba(200,93,104,.25)]">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 id="week-h" className="text-2xl">{tr("Your week")}</h2>
-              <span className="text-sm font-semibold text-ink/70">{tr("Checked in {n} of 7 days", { n: w.days })}</span>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 id="week-h" className="text-2xl">{tr("Your week")}</h2>
+                <span className="text-sm font-semibold text-ink/70">{tr("Checked in {n} of 7 days", { n: w.days })}</span>
+              </div>
+              <BloomProgress value={w.days / 7} className="w-16 shrink-0" label={tr("Your bloom: {n} of 7 days", { n: w.days })} />
             </div>
             <ol className="mt-4 grid grid-cols-7 gap-1.5" aria-label={tr("Check-ins this week")}>
               {week.map((d) => (
