@@ -2,23 +2,102 @@
 @tailwind components;
 @tailwind utilities;
 
-html { scroll-behavior: smooth; }
-body { @apply bg-plum-50 text-ink antialiased; font-family: var(--font-sans), var(--font-deva), system-ui, sans-serif; }
-h1, h2, h3, h4 { font-family: var(--font-serif), var(--font-deva-serif), Georgia, serif; @apply text-plum-800 font-semibold tracking-tight; }
-::selection { background: #f1b9b3; }
+/* Design tokens: RGB channels so Tailwind opacity modifiers work. Source: design-system/afterbloom/MASTER.md */
+:root {
+  --background: 255 248 243;
+  --surface: 255 255 255;
+  --surface-2: 253 238 228;
+  --line: 241 221 210;
+  --ink: 59 31 43;
+  --ink-muted: 107 74 87;
+  --primary: 176 74 86;
+  --primary-strong: 150 58 70;
+  --primary-fill: 176 74 86;
+  --on-primary: 255 255 255;
+  --accent: 79 122 94;
+  --gold: 224 166 59;
+  --danger: 185 28 28;
+  --warn: 180 83 9;
+  --ok: 47 125 79;
+  --shadow: 176 74 86;
+  /* legacy plum scale (aliases the same palette) */
+  --plum-50: 255 248 243; --plum-100: 253 238 228; --plum-200: 249 217 205; --plum-300: 241 185 179; --plum-400: 230 154 154;
+  --plum-500: 220 128 130; --plum-600: 200 93 104; --plum-700: 176 74 86; --plum-800: 90 26 51; --plum-900: 61 18 38;
+
+  /* CSS springs generated with Motion's spring(): keep in sync with lib/motion.ts */
+  --spring-gentle: 850ms linear(0, 0.046, 0.1551, 0.2934, 0.4378, 0.5737, 0.6927, 0.7915, 0.8694, 0.928, 0.9699, 0.998, 1.0153, 1.0245, 1.0281, 1.0279, 1.0254, 1.0217, 1.0176, 1.0136, 1.01, 1.007, 1.0045, 1.0027, 1.0013, 1.0003, 0.9997, 1);
+  --spring-snappy: 550ms linear(0, 0.1157, 0.3366, 0.5536, 0.7259, 0.8465, 0.9234, 0.9681, 0.9916, 1.0023, 1.0059, 1.0061, 1.005, 1.0035, 1.0023, 1.0014, 1.0007, 1);
+  color-scheme: light;
+}
+
+.dark {
+  --background: 28 17 23;
+  --surface: 42 26 34;
+  --surface-2: 51 32 42;
+  --line: 74 47 59;
+  --ink: 248 233 227;
+  --ink-muted: 214 187 190;
+  --primary: 240 160 171;
+  --primary-strong: 247 190 198;
+  --primary-fill: 188 79 99;
+  --on-primary: 255 255 255;
+  --accent: 141 191 159;
+  --gold: 232 185 96;
+  --danger: 248 113 113;
+  --warn: 251 191 36;
+  --ok: 111 207 151;
+  --shadow: 0 0 0;
+  --plum-50: 28 17 23; --plum-100: 42 26 34; --plum-200: 59 36 48; --plum-300: 90 56 70; --plum-400: 125 79 96;
+  --plum-500: 165 103 122; --plum-600: 208 123 136; --plum-700: 188 79 99; --plum-800: 248 220 214; --plum-900: 251 234 229;
+  color-scheme: dark;
+}
+
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  @apply bg-background text-ink antialiased;
+  font-family: var(--font-sans), var(--font-deva), system-ui, sans-serif;
+  font-size: 16px; line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
+}
+html[lang="hi"] body { line-height: 1.75; }
+h1, h2, h3, h4 { font-family: var(--font-serif), var(--font-deva-serif), Georgia, serif; @apply text-plum-800 font-semibold tracking-tight; text-wrap: balance; }
+::selection { background: rgb(var(--primary) / .25); }
+button, a, [role="button"] { touch-action: manipulation; }
+:focus-visible { outline: 3px solid rgb(var(--primary) / .55); outline-offset: 2px; border-radius: 8px; }
+
+/* dark mode: legacy pages use bg-white; map it to the surface token */
+.dark .bg-white { background-color: rgb(var(--surface)); }
+.dark .bg-white\/85, .dark .bg-white\/95 { background-color: rgb(var(--surface) / .92); }
+.dark .bg-plum-800 { background-color: rgb(var(--primary-fill)); }
+.dark .border-plum-100 { border-color: rgb(var(--line)); }
+
+/* Landing illustration: idle loops pause when the story is off-screen or the tab is hidden */
+.origin-fill-bottom { transform-box: fill-box; transform-origin: 50% 100%; }
+.origin-fill-top { transform-box: fill-box; transform-origin: 50% 0%; }
+[data-playing="false"] .idle { animation-play-state: paused !important; }
+/* bloom: --b runs 0 (bud) to 1 (open); petals and core read it. Angles are signed so the bud is symmetric. */
+.bloom-petal { transform-origin: 0 0; transform: rotate(calc(var(--a) * 1deg * (.12 + .88 * var(--b, 1)))) scaleY(calc(.45 + .55 * var(--b, 1))); }
+.bloom-core { transform-origin: 0 0; transform: scale(calc(.5 + .5 * var(--b, 1))); }
 
 @layer components {
-  .card { @apply bg-white rounded-3xl border border-plum-100 p-5 shadow-[0_10px_30px_-14px_rgba(200,93,104,.25)] transition duration-300; }
-  a.card:hover, button.card:hover { @apply -translate-y-1 shadow-[0_18px_40px_-14px_rgba(200,93,104,.35)]; }
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition duration-200 active:scale-[.97] disabled:opacity-50; }
-  .btn-primary { @apply btn bg-plum-700 text-white shadow-md shadow-plum-700/20 hover:bg-plum-800 hover:-translate-y-0.5; }
+  .card { @apply bg-surface rounded-card border border-line p-5 shadow-soft transition duration-300; }
+  a.card:hover, button.card:hover { @apply -translate-y-1 shadow-lift; }
+  .btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition duration-200 active:scale-[.97] disabled:opacity-50; }
+  .btn-primary { @apply btn bg-primary-fill text-primary-on shadow-md shadow-primary-fill/20 hover:bg-primary-strong hover:-translate-y-0.5; }
+  .dark .btn-primary { @apply hover:bg-primary-fill hover:brightness-110; }
   .btn-soft { @apply btn bg-plum-100 text-plum-800 hover:bg-plum-200; }
   .btn-ghost { @apply btn border border-plum-300 text-plum-800 hover:bg-plum-100; }
-  .input { @apply w-full rounded-2xl border border-plum-200 bg-white px-4 py-3 text-base outline-none transition focus:border-plum-600 focus:ring-4 focus:ring-plum-200/70; }
-  .chip { @apply inline-flex items-center rounded-full border border-plum-200 bg-white px-3.5 py-1.5 text-sm text-plum-800 transition hover:bg-plum-100 hover:-translate-y-0.5; }
-  .chip-on { @apply bg-plum-700 text-white border-plum-700 hover:bg-plum-700; }
+  .input { @apply min-h-[44px] w-full rounded-control border border-plum-200 bg-surface px-4 py-3 text-base outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/20; }
+  .chip { @apply inline-flex min-h-[44px] items-center rounded-full border border-plum-200 bg-surface px-3.5 py-1.5 text-sm text-plum-800 transition hover:bg-plum-100 hover:-translate-y-0.5; }
+  .chip-on { @apply bg-primary-fill text-primary-on border-transparent hover:bg-primary-fill; }
 }
-@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Reduced motion: kill loops and transforms, keep instant state changes. Motion's own
+   MotionConfig reducedMotion="user" handles the library side (opacity only). */
+@media (prefers-reduced-motion: reduce) {
+  .idle { animation: none !important; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
 @media print {
   header, nav, aside, .no-print { display: none !important; }
   body { background: white; }

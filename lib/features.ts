@@ -17,3 +17,4 @@ export const FEATURES: Feature[] = [
 ];
 export const navFor = (role: string) => FEATURES.filter((f) => f.roles.includes(role as any));
 export { Home, ShieldPlus };
+export const HOME_BY_ROLE = { mother: "/home", family: "/family-view", pro: "/pro" } as const;
