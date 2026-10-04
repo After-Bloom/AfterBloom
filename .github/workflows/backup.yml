@@ -1,0 +1,22 @@
+# Weekly encrypted backup (free Supabase has no automatic backups). The export is encrypted with a passphrase only you hold,
+# and kept as a workflow artifact for 30 days. Use a PRIVATE repository. Secrets needed: APP_URL, CRON_SECRET, BACKUP_PASSPHRASE.
+name: weekly-backup
+on:
+  schedule: [{ cron: "40 3 * * 0" }]
+  workflow_dispatch:
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the export
+        run: |
+          curl --fail --silent --show-error --retry 3 -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.APP_URL }}/api/cron/backup" -o backup.json
+      - name: Encrypt it
+        run: |
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in backup.json -out backup-$(date +%F).json.enc -pass pass:"${{ secrets.BACKUP_PASSPHRASE }}"
+          rm backup.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: afterbloom-backup
+          path: backup-*.json.enc
+          retention-days: 30
