@@ -18,10 +18,10 @@ export const EPDS: { q: string; options: EpdsOption[] }[] = [
 export const EPDS_CONFIG = { possible: 10, probable: 13 };
 
 export type EpdsBand = "low" | "possible" | "probable";
-export function scoreEpds(answers: number[]) {
+export function scoreEpds(answers: number[], cfg: { possible: number; probable: number } = EPDS_CONFIG) {
   const total = answers.reduce((a, b) => a + b, 0);
   const q10 = answers[9] ?? 0;
-  const band: EpdsBand = total >= EPDS_CONFIG.probable ? "probable" : total >= EPDS_CONFIG.possible ? "possible" : "low";
+  const band: EpdsBand = total >= cfg.probable ? "probable" : total >= cfg.possible ? "possible" : "low";
   return { total, band, selfHarm: q10 >= 1 };
 }
 

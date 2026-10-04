@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { AnimatePresence } from "motion/react";
 import { ChevronDown, CircleHelp, Cloud, Heart, Loader2, Mic, Send, ShieldQuestion, TriangleAlert } from "lucide-react";
-import { useApp, uid } from "@/lib/store";
+import { useApp } from "@/lib/store";
+import { useActions } from "@/lib/actions";
 import { redFlagCheck, followUpsFor, resolveCase, FuItem, CrisisKind } from "@/lib/triage";
 import { PSYCHOSIS_SIGNS, Symptom, SYMPTOMS, Level, bySymptomId } from "@/lib/symptoms";
 import { AREA_LABELS } from "@/lib/symptoms-extra";
@@ -28,7 +29,8 @@ const EXAMPLES = ["I have fever and my stitches are hurting a lot", "sar mein ba
 const NOT_SURE = -2;
 
 export default function Check() {
-  const { s, set, openCrisis, alertFamily } = useApp();
+  const { s, openCrisis } = useApp();
+  const act = useActions();
   const tr = useTr();
   const [who, setWho] = useState<"mother" | "baby">("mother");
   const [text, setText] = useState("");
@@ -43,12 +45,11 @@ export default function Check() {
 
   useEffect(() => () => rec.current?.stop?.(), []);
 
-  const log = (level: Level, labels: string[], t: string) =>
-    set((p) => ({ ...p, symptomLogs: [{ date: new Date().toISOString(), text: t, level, labels }, ...p.symptomLogs] }));
+  const log = (level: Level, labels: string[], _t: string) => { void act.logSymptom(level, labels); };
 
+  // The crisis screen opens at once from the phone. Alerting her professional and (if she agreed) her family happens in the background.
   const raiseRed = (reason: string, kind: CrisisKind) => {
-    if (kind !== "psychosis") alertFamily(`RED alert for ${s.mother.name}: ${reason}`);
-    set((p) => ({ ...p, flags: [{ id: uid(), date: new Date().toISOString(), kind: kind === "selfharm" ? "selfharm" : "red", text: reason, resolved: false, dueAt: new Date(Date.now() + 3600000).toISOString() }, ...p.flags] }));
+    void act.reportEmergency(kind, reason);
     openCrisis({ kind, reason });
   };
 
@@ -138,8 +139,8 @@ export default function Check() {
                 <p className="font-bold text-plum-800">{tr("Smarter symptom matching (optional)")}</p>
                 <p className="mt-1 text-sm text-ink-muted">{tr("Send the words you type (never your name) to our matching service so more ways of describing a symptom are understood. Nothing is stored. Emergency checks always run on your phone first.")}</p>
                 <div className="mt-3 flex gap-2">
-                  <button className="btn-primary !py-2" onClick={() => set((p) => ({ ...p, consent: { ...p.consent, cloudMatch: true } }))}>{tr("Allow")}</button>
-                  <button className="btn-ghost !py-2" onClick={() => set((p) => ({ ...p, consent: { ...p.consent, cloudMatch: false } }))}>{tr("Not now")}</button>
+                  <button className="btn-primary !py-2" onClick={() => act.setConsent({ cloudMatch: true })}>{tr("Allow")}</button>
+                  <button className="btn-ghost !py-2" onClick={() => act.setConsent({ cloudMatch: false })}>{tr("Not now")}</button>
                 </div>
               </div>
             </div>

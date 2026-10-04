@@ -98,7 +98,12 @@ button, a, [role="button"] { touch-action: manipulation; }
   .idle { animation: none !important; }
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+.print-only { display: none; }
 @media print {
+  @page { size: A4; margin: 14mm; }
+  .print-only { display: inline !important; }
+  .screen-only { display: none !important; }
+  .recharts-responsive-container { break-inside: avoid; }
   header, nav, aside, .no-print { display: none !important; }
   body { background: white; }
   main { padding: 0 !important; margin: 0 !important; }

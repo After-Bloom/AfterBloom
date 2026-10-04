@@ -6,6 +6,7 @@ import * as m from "motion/react-m";
 import { useInView, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
 import { ArrowRight, ChevronDown, Flower2, Moon, Phone, Sun } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { HOME_BY_ROLE } from "@/lib/demo";
 import { FEATURES } from "@/lib/features";
 import { useTr } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
@@ -32,7 +33,9 @@ function useMediaQuery(q: string) {
 const view = { once: true, margin: "-60px" } as const;
 
 export function Landing() {
-  const { set } = useApp();
+  const { auth } = useApp();
+  const signedIn = auth.status === "user";
+  const homeHref = (auth.role && HOME_BY_ROLE[auth.role]) || "/home";
   const tr = useTr();
   const router = useRouter();
   // read the preference only after mount so server and first client render match
@@ -65,11 +68,10 @@ export function Landing() {
 
   // handoff: a soft bloom circle grows from the pressed button, then the app opens
   const [leave, setLeave] = useState<{ x: number; y: number } | null>(null);
-  const go = (dest: string, role: "mother" | "pro") => (e: React.MouseEvent<HTMLElement>) => {
+  const go = (dest: string) => (e: React.MouseEvent<HTMLElement>) => {
     e.preventDefault();
     const r = e.currentTarget.getBoundingClientRect();
     setLeave({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-    set((s) => ({ ...s, role }));
     setTimeout(() => router.push(dest), reduce ? 160 : 640);
   };
 
@@ -88,6 +90,7 @@ export function Landing() {
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
             <button onClick={toggleTheme} aria-label={dark ? tr("Switch to light mode") : tr("Switch to dark mode")} aria-pressed={dark} className="hidden h-11 w-11 items-center justify-center rounded-full border border-line text-plum-800 transition hover:bg-plum-100 sm:flex">{dark ? <Sun className="h-5 w-5" aria-hidden /> : <Moon className="h-5 w-5" aria-hidden />}</button>
             <LangToggle />
+            {!signedIn && <Link href="/login" className="hidden h-11 items-center rounded-full border border-line px-4 text-sm font-bold text-plum-800 transition hover:bg-plum-100 sm:flex">{tr("Sign in")}</Link>}
             {/* always visible, plain link: works with no JS and never waits on the app */}
             <a href="/crisis" className="flex h-11 items-center gap-1.5 rounded-full bg-red-600 px-3.5 text-sm font-bold text-white shadow-md shadow-red-600/25 transition hover:bg-red-700 active:scale-95"><Phone className="h-4 w-4" aria-hidden /><span className="sm:hidden">{tr("Help now")}</span><span className="hidden sm:inline">{tr("Need help now?")}</span></a>
           </div>
@@ -124,7 +127,7 @@ export function Landing() {
               </h1>
               <p className="mt-4 max-w-md animate-fadeUp text-lg text-ink-muted [animation-delay:400ms]">{tr("A care companion for mothers, their families and their babies.")}</p>
               <div className="mt-6 flex animate-fadeUp flex-wrap items-center gap-3 [animation-delay:520ms]">
-                <m.a whileTap={tap} href="/home" onClick={go("/home", "mother")} className="btn-primary !px-7 !py-3.5 text-base">{tr("Start your check-in")}<ArrowRight className="h-5 w-5" aria-hidden /></m.a>
+                <m.a whileTap={tap} href={signedIn ? homeHref : "/signup"} onClick={go(signedIn ? homeHref : "/signup")} className="btn-primary !px-7 !py-3.5 text-base">{signedIn ? tr("Open my home") : tr("Start your check-in")}<ArrowRight className="h-5 w-5" aria-hidden /></m.a>
                 <a href="#why" className="btn-ghost">{tr("Why we exist")}<ChevronDown className="h-4 w-4" aria-hidden /></a>
               </div>
             </div>
@@ -181,8 +184,8 @@ export function Landing() {
             <m.h2 variants={rise} id="final-h" className="mt-4 text-3xl md:text-4xl">{tr("Every new mother deserves someone checking on her.")}</m.h2>
             <m.p variants={rise} className="mt-3 text-ink-muted">{tr("Free for mothers, always. Crisis help never needs a login.")}</m.p>
             <m.div variants={rise} className="mt-7 flex flex-col items-center gap-3 sm:flex-row">
-              <m.a whileTap={tap} href="/home" onClick={go("/home", "mother")} className="btn-primary !px-8 !py-4 text-base">{tr("Start your check-in")}<ArrowRight className="h-5 w-5" aria-hidden /></m.a>
-              <m.a whileTap={tap} href="/pro" onClick={go("/pro", "pro")} className="btn-ghost !px-8 !py-4 text-base">{tr("I'm a professional")}</m.a>
+              <m.a whileTap={tap} href={signedIn ? homeHref : "/signup"} onClick={go(signedIn ? homeHref : "/signup")} className="btn-primary !px-8 !py-4 text-base">{signedIn ? tr("Open my home") : tr("Start your check-in")}<ArrowRight className="h-5 w-5" aria-hidden /></m.a>
+              {!signedIn && <m.a whileTap={tap} href="/login" onClick={go("/login")} className="btn-ghost !px-8 !py-4 text-base">{tr("I'm a professional")}</m.a>}
             </m.div>
           </m.div>
         </section>

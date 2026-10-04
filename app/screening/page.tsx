@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { AnimatePresence } from "motion/react";
 import { ArrowLeft, Check, Flower2, HeartHandshake, Phone } from "lucide-react";
-import { useApp, uid, daysSince } from "@/lib/store";
+import { useApp, daysSince } from "@/lib/store";
+import { useActions } from "@/lib/actions";
 import { EPDS, EPDS_SCHEDULE, scoreEpds, EpdsBand } from "@/lib/epds";
 import { PageHead, Disclaimer, fmtDate } from "@/components/ui";
 import { useTr } from "@/lib/i18n";
@@ -15,7 +16,9 @@ import { rise, slide, spring, stagger, tap } from "@/lib/motion";
 // Question 10 scored 1 or more opens the crisis screen immediately and overrides everything.
 
 export default function Screening() {
-  const { s, set, openCrisis } = useApp();
+  const { s, openCrisis } = useApp();
+  const act = useActions();
+  const [saveErr, setSaveErr] = useState(false);
   const tr = useTr();
   const [step, setStep] = useState(-1); // -1 intro, 0..9 questions, 10 result
   const [dir, setDir] = useState(1);
@@ -26,18 +29,14 @@ export default function Screening() {
   const age = daysSince(s.mother.birth);
 
   const finish = (answers: number[]) => {
+    // The result shows at once from the phone (so a positive question 10 opens the crisis screen with no wait).
+    // The server then scores it again with the clinician-set cut-offs, encrypts and stores the answers, and routes it to a human.
     const r = scoreEpds(answers);
-    const now = new Date().toISOString();
-    set((p) => {
-      const flags = [...p.flags];
-      if (r.selfHarm) flags.unshift({ id: uid(), date: now, kind: "q10", text: "EPDS question 10 positive: thoughts of self-harm", resolved: false, dueAt: now });
-      else if (r.band === "probable") flags.unshift({ id: uid(), date: now, kind: "epds", text: `EPDS ${r.total}: probable depression`, resolved: false, dueAt: new Date(Date.now() + 48 * 3600000).toISOString() });
-      return { ...p, epds: [{ date: now, total: r.total, band: r.band, selfHarm: r.selfHarm }, ...p.epds], flags };
-    });
-    // a positive question 10 is treated as the "care team will be in touch" outcome too, never a low message
-    setBand(r.selfHarm ? "probable" : r.band);
+    setBand(r.selfHarm ? "probable" : r.band); // a positive question 10 is treated as "care team will be in touch", never a low message
     setDir(1); setStep(EPDS.length);
     if (r.selfHarm) openCrisis({ kind: "selfharm", reason: "Your answer to the last question" });
+    setSaveErr(false);
+    act.submitEpds(answers).then((sr) => setBand(sr.selfHarm ? "probable" : sr.band)).catch(() => setSaveErr(true));
   };
 
   const pick = (score: number) => {
@@ -131,6 +130,7 @@ export default function Screening() {
             {band !== "low" && (
               <a href="tel:14416" className="card flex items-center gap-3 border-ok/40 bg-ok/10"><Phone className="h-6 w-6 shrink-0 text-ok" aria-hidden /><span><b>{tr("Want to talk sooner?")}</b> {tr("Tele-MANAS")} 14416: {tr("free, 24×7, 20 languages.")}</span></a>
             )}
+            {saveErr && <p role="alert" className="rounded-control bg-warn/10 p-3 text-sm font-semibold text-warn">{tr("We could not save your answers. Please check your connection and take the check again later.")}</p>}
             <button className="btn-ghost w-full" onClick={() => { setDir(-1); setStep(-1); setBand(null); }}>{tr("Done")}</button>
           </m.div>
         )}

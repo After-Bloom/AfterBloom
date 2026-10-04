@@ -1,33 +1,39 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import * as m from "motion/react-m";
-import { Flower2, LogOut, Phone, Home, Stethoscope, CalendarCheck, MessageCircleHeart, LayoutGrid, Menu, X, Moon, Sun } from "lucide-react";
-import { StoreProvider, useApp, Role, daysSince } from "@/lib/store";
+import { Flower2, LogOut, Phone, Home, Stethoscope, CalendarCheck, MessageCircleHeart, LayoutGrid, Menu, X, Moon, Sun, LogIn } from "lucide-react";
+import { StoreProvider, useApp, daysSince } from "@/lib/store";
 import { navFor, HOME_BY_ROLE } from "@/lib/features";
 import { useTr } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
+import { registerWorker } from "@/lib/push";
 import { spring, tap } from "@/lib/motion";
 import { MotionProvider } from "./MotionProvider";
 import { CrisisScreen } from "./Crisis";
 import { LockScreen } from "./LockScreen";
 import { LangToggle } from "./LangToggle";
+import { AlertsBell } from "./AlertsBell";
+import { AccountMenu } from "./AccountMenu";
 
-const HOME: Record<Role, string> = HOME_BY_ROLE;
 const NAV_KEY = "ab.nav";
 // exact match or a real sub-route, so "/check" is not active on "/checkin"
 const on = (path: string, href: string) => path === href || path.startsWith(href + "/");
+const ROLE_LABEL: Record<string, string> = { mother: "Mother", family: "Family circle", pro: "Professional", moderator: "Moderator", asha: "ASHA worker", admin: "Admin" };
 
 function Inner({ children }: { children: React.ReactNode }) {
-  const { s, set, ready, crisis, openCrisis, locked, setLocked } = useApp();
+  const { s, ready, auth, crisis, openCrisis, locked, setLocked } = useApp();
   const path = usePathname();
-  const router = useRouter();
   const tr = useTr();
   const { dark, toggle: toggleTheme } = useTheme();
   const [exiting, setExiting] = useState(false);
   const [nav, setNav] = useState(false);
+  const role = auth.role;
+  const signedIn = auth.status === "user";
+  const home = (role && HOME_BY_ROLE[role]) || "/";
 
+  useEffect(() => { registerWorker(); }, []);
   useEffect(() => {
     try {
       const saved = localStorage.getItem(NAV_KEY);
@@ -45,20 +51,16 @@ function Inner({ children }: { children: React.ReactNode }) {
 
   // The crisis route is standalone: no shell, no data fetching, no motion.
   if (path === "/crisis") return <CrisisScreen standalone />;
-  // The landing page brings its own header and animation; the app chrome starts after it.
-  if (path === "/") return <>{children}{crisis && <CrisisScreen />}{locked && !exiting && <LockScreen />}</>;
+  // The landing page and the sign-in pages bring their own header.
+  if (path === "/" || path === "/login" || path === "/signup" || path === "/offline") return <>{children}{crisis && <CrisisScreen />}{locked && !exiting && <LockScreen />}</>;
 
-  const switchRole = (r: Role) => { set((p) => ({ ...p, role: r })); router.push(HOME[r]); };
-  const quickExit = () => { setExiting(true); if (s.pin) setLocked(true); window.location.replace("https://www.google.com/search?q=weather"); };
-  const items = navFor(s.role);
-  const bottom = s.role === "mother"
-    ? [{ href: "/home", label: tr("Home"), icon: Home }, { href: "/check", label: tr("Symptoms"), icon: Stethoscope }, { href: "/checkin", label: tr("Check-in"), icon: CalendarCheck }, { href: "/circles", label: tr("Circles"), icon: MessageCircleHeart }, { href: "/more", label: tr("More"), icon: LayoutGrid }]
-    : [{ href: HOME[s.role], label: tr("Home"), icon: Home }, { href: "/more", label: tr("More"), icon: LayoutGrid }];
-  const RoleSelect = (
-    <select aria-label={tr("View as")} value={s.role} onChange={(e) => switchRole(e.target.value as Role)} className="min-h-[44px] rounded-full border border-line bg-surface px-3 text-sm font-semibold text-plum-800">
-      <option value="mother">{tr("View: Mother")}</option><option value="family">{tr("View: Family")}</option><option value="pro">{tr("View: Professional")}</option>
-    </select>
-  );
+  const quickExit = () => { setExiting(true); if (s.pinHash) setLocked(true); window.location.replace("https://www.google.com/search?q=weather"); };
+  const items = navFor(role);
+  const bottom = !signedIn
+    ? [{ href: "/", label: tr("Home"), icon: Home }, { href: "/check", label: tr("Symptoms"), icon: Stethoscope }, { href: "/login", label: tr("Sign in"), icon: LogIn }]
+    : role === "mother"
+      ? [{ href: "/home", label: tr("Home"), icon: Home }, { href: "/check", label: tr("Symptoms"), icon: Stethoscope }, { href: "/checkin", label: tr("Check-in"), icon: CalendarCheck }, { href: "/circles", label: tr("Circles"), icon: MessageCircleHeart }, { href: "/more", label: tr("More"), icon: LayoutGrid }]
+      : [{ href: home, label: tr("Home"), icon: Home }, { href: "/more", label: tr("More"), icon: LayoutGrid }];
   const ThemeBtn = (cls: string) => (
     <button onClick={toggleTheme} aria-label={dark ? tr("Switch to light mode") : tr("Switch to dark mode")} aria-pressed={dark} className={`flex h-11 w-11 items-center justify-center rounded-full border border-line text-plum-800 transition hover:bg-plum-100 active:scale-90 ${cls}`}>
       {dark ? <Sun className="h-5 w-5" aria-hidden /> : <Moon className="h-5 w-5" aria-hidden />}
@@ -74,13 +76,14 @@ function Inner({ children }: { children: React.ReactNode }) {
             <Menu className={`absolute h-6 w-6 transition-all duration-300 ${nav ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"}`} />
             <X className={`absolute h-6 w-6 transition-all duration-300 ${nav ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"}`} />
           </button>
-          <Link href={HOME[s.role]} className="flex min-w-0 items-center gap-1.5 font-serif text-xl font-bold text-plum-800 sm:text-2xl"><Flower2 className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7" aria-hidden /><span className="truncate">AfterBloom</span></Link>
+          <Link href={signedIn ? home : "/"} className="flex min-w-0 items-center gap-1.5 font-serif text-xl font-bold text-plum-800 sm:text-2xl"><Flower2 className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7" aria-hidden /><span className="truncate">AfterBloom</span></Link>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-            <div className="hidden md:block">{RoleSelect}</div>
-            {ThemeBtn("hidden sm:flex")}
+            {ThemeBtn("hidden md:flex")}
             <LangToggle />
-            <button onClick={quickExit} aria-label={tr("Quick exit")} title={tr("Quick exit")} className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-line px-3 text-sm font-semibold text-plum-800 transition hover:bg-plum-100 active:scale-90"><LogOut className="h-5 w-5" aria-hidden /><span className="hidden lg:inline">{tr("Quick exit")}</span></button>
+            {signedIn && <AlertsBell />}
+            <button onClick={quickExit} aria-label={tr("Quick exit")} title={tr("Quick exit")} className="flex h-11 min-w-11 items-center justify-center gap-1.5 rounded-full border border-line px-3 text-sm font-semibold text-plum-800 transition hover:bg-plum-100 active:scale-90"><LogOut className="h-5 w-5" aria-hidden /><span className="hidden xl:inline">{tr("Quick exit")}</span></button>
             <button onClick={() => openCrisis({ kind: "selfharm", reason: "" })} aria-label={tr("Need help now")} className="flex h-11 items-center gap-1.5 rounded-full bg-red-600 px-3.5 text-sm font-bold text-white shadow-md shadow-red-600/25 transition hover:bg-red-700 active:scale-95"><Phone className="h-4 w-4" aria-hidden /><span className="hidden sm:inline">{tr("Need help now")}</span><span className="sm:hidden">SOS</span></button>
+            <AccountMenu />
           </div>
         </div>
       </header>
@@ -89,15 +92,17 @@ function Inner({ children }: { children: React.ReactNode }) {
 
       <aside id="side-nav" aria-label={tr("Menu")} {...(nav ? {} : { inert: "" as any })} className={`fixed bottom-0 left-0 top-16 z-30 flex w-72 flex-col overflow-y-auto border-r border-line bg-surface shadow-xl shadow-primary/5 transition-transform duration-300 ease-out ${nav ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="m-4 flex items-center gap-3 rounded-card bg-gradient-to-br from-plum-100 to-plum-200 p-3.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-fill text-lg font-bold text-primary-on">{s.role === "pro" ? "A" : s.role === "family" ? tr("Rohan")[0] : tr(s.mother.name)[0]}</span>
-          <div className="min-w-0"><div className="truncate font-bold text-plum-800">{s.role === "pro" ? tr("Dr. Ananya Rao") : s.role === "family" ? tr("Rohan") : tr(s.mother.name)}</div><div className="text-xs text-ink-muted">{s.role === "mother" ? tr("Day {n} postpartum", { n: daysSince(s.mother.birth) }) : s.role === "family" ? tr("Family circle") : tr("Sample professional")}</div></div>
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-fill text-lg font-bold text-primary-on">{(auth.name || "?")[0]?.toUpperCase()}</span>
+          <div className="min-w-0"><div className="truncate font-bold text-plum-800">{signedIn ? auth.name : tr("Guest")}</div><div className="text-xs text-ink-muted">{role === "mother" ? tr("Day {n} postpartum", { n: daysSince(s.mother.birth) }) : signedIn ? tr(ROLE_LABEL[role ?? "mother"]) : tr("Not signed in")}</div></div>
         </div>
         <nav className="flex-1 space-y-1 px-3 pb-4">
-          <NavLink href={HOME[s.role]} icon={Home} label={tr("Home")} active={path === HOME[s.role]} i={0} open={nav} />
-          {items.filter((f) => f.href !== HOME[s.role]).map((f, i) => <NavLink key={f.href} href={f.href} icon={f.icon} label={tr(f.title)} active={on(path, f.href)} i={i + 1} open={nav} />)}
+          {signedIn && <NavLink href={home} icon={Home} label={tr("Home")} active={path === home} i={0} open={nav} />}
+          {!signedIn && <NavLink href="/check" icon={Stethoscope} label={tr("Symptom checker")} active={path === "/check"} i={0} open={nav} />}
+          {!signedIn && <NavLink href="/login" icon={LogIn} label={tr("Sign in")} active={false} i={1} open={nav} />}
+          {items.filter((f) => f.href !== home).map((f, i) => <NavLink key={f.href} href={f.href} icon={f.icon} label={tr(f.title)} active={on(path, f.href)} i={i + 1} open={nav} />)}
         </nav>
         <div className="space-y-3 border-t border-line p-4 text-xs text-ink-muted">
-          <div className="flex items-center gap-2 md:hidden">{RoleSelect}{ThemeBtn("sm:hidden")}</div>
+          <div className="md:hidden">{ThemeBtn("")}</div>
           <p>{tr("Free help 24×7:")} {tr("Tele-MANAS")} <a className="font-bold underline" href="tel:14416">14416</a></p>
         </div>
       </aside>

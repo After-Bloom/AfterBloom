@@ -1,3 +1,4 @@
+import { HI_EXTRA } from "./hi-extra";
 // Hindi translations. Key = the English string used in the UI. Wording is a draft pending clinician review.
 export const NAMES: [string, string][] = [
   ["Dr. Ananya Rao (sample)", "डॉ. अनन्या राव (नमूना)"],
@@ -404,6 +405,8 @@ const BASE: Record<string, string> = {
   "Matched with smarter matching.": "बेहतर पहचान से मिलान किया गया।", "Matched on your phone.": "आपके फ़ोन पर मिलान किया गया।",
   "Very severe headache": "बहुत तेज़ सिरदर्द", "Yellow palms or soles in the baby": "बच्चे की हथेलियाँ या तलवे पीले", "Spreading redness or pus at the cord": "नाल पर फैलती लालिमा या मवाद",
   "If this feels like an emergency, call 112": "अगर यह आपातकाल लगे तो 112 पर कॉल करें",
+  "Your family has been alerted, as you agreed.": "आपकी सहमति के अनुसार आपके परिवार को सूचित कर दिया गया है।",
+  "Hospital": "अस्पताल", "Could not find hospitals here. Search on the map": "यहाँ अस्पताल नहीं मिले। नक्शे पर खोजें",
   "Help now": "मदद", "Need help now?": "अभी मदद चाहिए?",
   "After the baby comes home, everyone checks on the baby.": "बच्चे के घर आने के बाद, सब बच्चे का हाल पूछते हैं।",
   "AfterBloom checks on the mother.": "AfterBloom माँ का हाल पूछता है।",
@@ -427,4 +430,4 @@ const BASE: Record<string, string> = {
   "Real ASHA onboarding and district pilots with NHM. Depression screening is not currently part of HBNC home visits (days 3, 7, 14, 21, 28, 42).": "एनएचएम के साथ असली आशा जुड़ाव और ज़िला स्तर के पायलट। अवसाद की जाँच अभी एचबीएनसी गृह भेंटों (दिन 3, 7, 14, 21, 28, 42) का हिस्सा नहीं है।",
 };
 
-export const HI: Record<string, string> = { ...HI_DATA, ...BASE };
+export const HI: Record<string, string> = { ...HI_DATA, ...HI_EXTRA, ...BASE };

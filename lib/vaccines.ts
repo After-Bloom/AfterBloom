@@ -12,9 +12,13 @@ export const VACCINES: VaccineStep[] = [
   { id: "16m", age: "16-24 months", days: 487, vaccines: ["MR-2", "JE-2", "DPT booster-1", "OPV booster"] },
 ];
 
+// Developmental milestones by age. Source to confirm: WHO and the Indian Academy of Pediatrics; pending paediatrician review.
+// Missing a milestone is not a diagnosis: the page always says to talk to the doctor if she is worried.
 export const MILESTONES = [
+  { age: "1 month", items: ["Lifts head briefly when on tummy", "Startles or turns to a loud sound", "Looks at faces"] },
   { age: "2 months", items: ["Smiles at people", "Follows things with eyes", "Briefly calms when comforted"] },
   { age: "4 months", items: ["Holds head steady", "Coos and makes sounds", "Reaches for toys"] },
   { age: "6 months", items: ["Rolls over", "Responds to own name", "Passes things hand to hand"] },
   { age: "9 months", items: ["Sits without support", "Babbles 'mama' 'baba'", "Plays peek-a-boo"] },
+  { age: "12 months", items: ["Pulls up to stand", "Says one or two words", "Waves bye-bye"] },
 ];

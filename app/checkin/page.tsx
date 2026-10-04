@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import * as m from "motion/react-m";
 import { AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
-import { useApp, dayStr, uid } from "@/lib/store";
+import { useApp, dayStr } from "@/lib/store";
+import { useActions } from "@/lib/actions";
 import { triageCheckin, DangerAnswers } from "@/lib/triage";
 import { PageHead, Disclaimer } from "@/components/ui";
 import { useTr } from "@/lib/i18n";
@@ -56,7 +57,9 @@ function YesNo({ q, v, onChange }: { q: string; v: boolean; onChange: (b: boolea
 }
 
 export default function Checkin() {
-  const { s, set, openCrisis, alertFamily } = useApp();
+  const { s, openCrisis } = useApp();
+  const act = useActions();
+  const [saveErr, setSaveErr] = useState(false);
   const tr = useTr();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
@@ -88,11 +91,11 @@ export default function Checkin() {
     const before = weekCount;
     const rec = { date: new Date().toISOString(), mood, appetite, sleepHours: sleep, level: r.level, bp };
     setOut(r); setShown(true); setBloom(before / 7); setDir(1); setStep(STEPS);
-    set((p) => ({ ...p, checkins: [...p.checkins.filter((c) => dayStr(c.date) !== dayStr(rec.date)), rec] }));
+    setSaveErr(false);
+    act.saveCheckin(rec, r.reasons).catch(() => setSaveErr(true));
     setTimeout(() => setBloom(Math.min(7, doneToday ? before : before + 1) / 7), 500);
     if (r.level === "RED") {
-      alertFamily(`RED check-in for ${s.mother.name}: ${r.reasons.join(", ")}`);
-      set((p) => ({ ...p, flags: [{ id: uid(), date: rec.date, kind: "red", text: r.reasons.join(", "), resolved: false, dueAt: new Date(Date.now() + 3600000).toISOString() }, ...p.flags] }));
+      void act.reportEmergency("medical" as any, r.reasons.join(", "));
       openCrisis({ kind: "medical", reason: r.reasons.join(", ") });
     }
   };
@@ -182,6 +185,7 @@ export default function Checkin() {
                   {out.level === "GREEN"
                     ? <m.div variants={rise} initial="hidden" animate="show" className="rounded-card border-2 border-ok/40 bg-ok/10 p-5 text-center"><p className="font-serif text-2xl text-plum-800">{tr("Thank you for checking in. Everything looks fine today.")}</p></m.div>
                     : <TriageResult level={out.level} reasons={out.reasons} />}
+                  {saveErr && <p role="alert" className="rounded-control bg-warn/10 p-3 text-sm font-semibold text-warn">{tr("We could not save this check-in. Please check your connection and try again.")}</p>}
                   <button className="btn-ghost w-full" onClick={restart}>{tr("Done")}</button>
                 </div>
               )}

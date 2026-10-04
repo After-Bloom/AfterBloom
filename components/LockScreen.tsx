@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Delete, Lock, Phone } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { hashPin } from "@/lib/pin";
 import { useTr } from "@/lib/i18n";
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
@@ -13,13 +14,13 @@ export function LockScreen() {
   const [v, setV] = useState("");
   const [bad, setBad] = useState(false);
 
-  const press = (d: string) => {
+  const press = async (d: string) => {
     if (v.length >= 4) return;
     const next = v + d;
     setBad(false);
     setV(next);
     if (next.length === 4) {
-      if (next === s.pin) setLocked(false);
+      if ((await hashPin(next, "ab")) === s.pinHash) setLocked(false);
       else setTimeout(() => { setBad(true); setV(""); }, 120);
     }
   };
