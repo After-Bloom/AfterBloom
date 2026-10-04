@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { scroll-behavior: smooth; }
+body { @apply bg-plum-50 text-ink antialiased; font-family: var(--font-sans), var(--font-deva), system-ui, sans-serif; }
+h1, h2, h3, h4 { font-family: var(--font-serif), var(--font-deva-serif), Georgia, serif; @apply text-plum-800 font-semibold tracking-tight; }
+::selection { background: #f1b9b3; }
+
+@layer components {
+  .card { @apply bg-white rounded-3xl border border-plum-100 p-5 shadow-[0_10px_30px_-14px_rgba(200,93,104,.25)] transition duration-300; }
+  a.card:hover, button.card:hover { @apply -translate-y-1 shadow-[0_18px_40px_-14px_rgba(200,93,104,.35)]; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition duration-200 active:scale-[.97] disabled:opacity-50; }
+  .btn-primary { @apply btn bg-plum-700 text-white shadow-md shadow-plum-700/20 hover:bg-plum-800 hover:-translate-y-0.5; }
+  .btn-soft { @apply btn bg-plum-100 text-plum-800 hover:bg-plum-200; }
+  .btn-ghost { @apply btn border border-plum-300 text-plum-800 hover:bg-plum-100; }
+  .input { @apply w-full rounded-2xl border border-plum-200 bg-white px-4 py-3 text-base outline-none transition focus:border-plum-600 focus:ring-4 focus:ring-plum-200/70; }
+  .chip { @apply inline-flex items-center rounded-full border border-plum-200 bg-white px-3.5 py-1.5 text-sm text-plum-800 transition hover:bg-plum-100 hover:-translate-y-0.5; }
+  .chip-on { @apply bg-plum-700 text-white border-plum-700 hover:bg-plum-700; }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+@media print {
+  header, nav, aside, .no-print { display: none !important; }
+  body { background: white; }
+  main { padding: 0 !important; margin: 0 !important; }
+}
