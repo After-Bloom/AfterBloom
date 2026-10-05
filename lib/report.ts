@@ -40,3 +40,25 @@ export function familyNote(s: State, tr: (en: string, v?: Record<string, string 
   lines.push(tr("Listen without fixing. 'That sounds hard' is a good sentence."));
   return lines;
 }
+
+/** The first six weeks, one row per week since birth: how often she checked in, her averages, and anything that was not green. */
+export function recoveryWeeks(s: State) {
+  const birth = new Date(s.mother.birth).getTime();
+  const age = daysSince(s.mother.birth);
+  const weeks = Math.min(6, Math.floor(age / 7) + 1);
+  const DAY = 86400000;
+  return Array.from({ length: weeks }, (_, w) => {
+    const from = birth + w * 7 * DAY, to = from + 7 * DAY;
+    const inWeek = (d: string) => { const t = new Date(d).getTime(); return t >= from && t < to; };
+    const cis = s.checkins.filter((c) => inWeek(c.date));
+    const avg = (f: (c: any) => number) => (cis.length ? cis.reduce((a, c) => a + f(c), 0) / cis.length : null);
+    const bps = cis.filter((c) => c.bp).map((c) => c.bp!);
+    return {
+      week: w + 1, days: new Set(cis.map((c) => dayStr(c.date))).size, mood: avg((c) => c.mood), sleep: avg((c) => c.sleepHours),
+      amber: s.symptomLogs.filter((l) => inWeek(l.date) && l.level === "AMBER").length + cis.filter((c) => c.level === "AMBER").length,
+      red: s.symptomLogs.filter((l) => inWeek(l.date) && l.level === "RED").length + cis.filter((c) => c.level === "RED").length,
+      maxBp: bps.length ? bps.reduce((m, b) => (b.sys > m.sys ? b : m)) : null,
+      current: w === weeks - 1,
+    };
+  });
+}

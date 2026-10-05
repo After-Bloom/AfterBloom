@@ -9,6 +9,9 @@ import { VACCINES } from "@/lib/vaccines";
 import { stageText, weekData } from "@/lib/report";
 import { Sparkle } from "@/components/fx";
 import { BloomProgress } from "@/components/BloomProgress";
+import { CareLoopCard } from "@/components/CareLoopCard";
+import { BpWatch } from "@/components/BpWatch";
+import { RecoveryProfile } from "@/components/RecoveryProfile";
 
 const QUICK = [
   { icon: Stethoscope, label: "Is this normal?", hint: "Check a symptom", href: "/check" },
@@ -63,6 +66,10 @@ export default function Home() {
 
       <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr] lg:gap-6">
         <div className="space-y-5">
+          <CareLoopCard />
+          <BpWatch />
+          <RecoveryProfile />
+
           {/* The one primary action */}
           <section aria-labelledby="checkin-h" className="relative overflow-hidden rounded-[2rem] bg-plum-100 p-6 md:p-8">
             <Sparkle className="absolute right-5 top-5 text-plum-400" size={26} />

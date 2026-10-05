@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { Check, Loader2, MessageCircle, Printer, Send } from "lucide-react";
 import { useApp, daysSince, dayStr } from "@/lib/store";
 import { useActions } from "@/lib/actions";
-import { weekData, stageText, face } from "@/lib/report";
+import { weekData, stageText, face, recoveryWeeks } from "@/lib/report";
+import { RISK_ITEMS, riskKeys } from "@/lib/risk";
 import { PageHead, Tabs, LevelBadge, Toggle, fmtDate, fmtTime, Disclaimer } from "@/components/ui";
 import { TrendChart, BpChart } from "@/components/Charts";
 import { BloomProgress } from "@/components/BloomProgress";
@@ -60,7 +61,7 @@ export default function Report() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <PageHead title="Your weekly report" sub="Three versions of the same week, for three readers. Written from fixed templates, never by AI." />
-      <div className="no-print"><Tabs value={tab} onChange={setTab} tabs={[{ id: "week", label: "Your week" }, { id: "doctor", label: "For my doctor" }, { id: "family", label: "For my family" }]} /></div>
+      <div className="no-print"><Tabs value={tab} onChange={setTab} tabs={[{ id: "week", label: "Your week" }, { id: "recovery", label: "Recovery" }, { id: "doctor", label: "For my doctor" }, { id: "family", label: "For my family" }]} /></div>
 
       {tab === "week" && (
         <div className="space-y-4">
@@ -85,6 +86,26 @@ export default function Report() {
         </div>
       )}
 
+      {tab === "recovery" && (
+        <div className="space-y-4">
+          <section className="card space-y-1"><h2 className="font-serif text-2xl">{tr("Your first six weeks")}</h2><p className="text-sm text-ink-muted">{tr("One row for each week since the birth. It shows how often you checked in and how you were, never a grade.")}</p></section>
+          <div className="space-y-3">
+            {recoveryWeeks(s).map((r) => (
+              <section key={r.week} className={`card space-y-2 ${r.current ? "!border-primary" : ""}`}>
+                <div className="flex items-center justify-between gap-2"><h3 className="font-serif text-xl">{tr("Week {n}", { n: r.week })}{r.current && <span className="ml-2 rounded-full bg-plum-100 px-2 py-0.5 align-middle text-xs font-bold text-plum-800">{tr("This week")}</span>}</h3><span className="text-sm font-semibold text-ink-muted">{tr("Checked in {n} of 7 days", { n: r.days })}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-line" aria-hidden><div className="h-full rounded-full bg-primary-fill" style={{ width: `${(r.days / 7) * 100}%` }} /></div>
+                <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                  <div className="rounded-control bg-surface-2 p-2"><div className="text-2xl" aria-hidden>{r.mood ? face(r.mood) : "–"}</div><div className="text-xs font-semibold text-ink-muted">{tr("Mood")}</div></div>
+                  <div className="rounded-control bg-surface-2 p-2"><div className="text-xl font-bold">{r.sleep ? r.sleep.toFixed(1) : "–"}</div><div className="text-xs font-semibold text-ink-muted">{tr("Sleep (h)")}</div></div>
+                  <div className="rounded-control bg-surface-2 p-2"><div className="text-xl font-bold">{r.maxBp ? `${r.maxBp.sys}/${r.maxBp.dia}` : "–"}</div><div className="text-xs font-semibold text-ink-muted">{tr("Highest BP")}</div></div>
+                </div>
+                {(r.amber > 0 || r.red > 0) && <p className="text-sm text-ink-muted">{r.red > 0 && <span className="font-semibold text-danger">{tr("{n} urgent signs", { n: r.red })}</span>}{r.red > 0 && r.amber > 0 && " · "}{r.amber > 0 && <span className="font-semibold text-warn">{tr("{n} to watch", { n: r.amber })}</span>}</p>}
+              </section>
+            ))}
+          </div>
+        </div>
+      )}
+
       {tab === "doctor" && (
         <div className="space-y-4">
           <div className="no-print card flex flex-wrap items-center gap-3">
@@ -97,6 +118,7 @@ export default function Report() {
               <h2 className="font-serif text-2xl">{tr("Clinical summary")}: {s.mother.name}</h2>
               <p className="text-sm text-ink-muted">{tr("Day {n} after birth", { n: age })} · {tr(s.mother.delivery)} · {tr("Baby")}: {s.mother.babyName || "-"} · {new Date().toLocaleDateString(loc.v, { day: "numeric", month: "long", year: "numeric" })}</p>
             </header>
+            <section><h3 className="mb-1 font-bold">{tr("Recovery profile")}</h3><p className="text-sm">{!s.risk.set ? tr("Not filled in yet.") : riskKeys(s.risk).length ? riskKeys(s.risk).map((k) => tr(RISK_ITEMS.find((x) => x.k === k)!.label)).join("; ") : tr("No extra risks reported.")}</p>{s.mother.birthWeightKg && <p className="text-sm">{tr("Baby")}: {tr("birth weight")} {s.mother.birthWeightKg} kg{s.weights.filter((w) => w.kg > 0).length ? `; ${tr("last weight")} ${s.weights.filter((w) => w.kg > 0).slice(-1)[0].kg} kg (${fmtDate(s.weights.filter((w) => w.kg > 0).slice(-1)[0].date)})` : ""}</p>}</section>
             <section><h3 className="mb-1 font-bold">{tr("Check-in trends (last 14 days)")}</h3><TrendChart data={twoWeeks} height={170} /><p className="text-sm text-ink-muted">{tr("Checked in {n} of 14 days. Average sleep {h} h.", { n: twoWeeks.length, h: avgSleep })}</p></section>
             <section><h3 className="mb-1 font-bold">{tr("Mood screening (EPDS)")}</h3>
               {s.epds.length === 0 && <p className="text-sm text-ink-muted">{tr("No screening yet.")}</p>}

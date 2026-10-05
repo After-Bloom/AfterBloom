@@ -1,9 +1,10 @@
-import { Activity, Baby, BarChart3, BookHeart, CalendarCheck, FileText, HeartHandshake, Lock, MessageCircleHeart, ShieldCheck, Settings2, Stethoscope, Users, Video, Brain, Home, ShieldPlus } from "lucide-react";
+import { MessageCircleQuestion, Activity, Baby, BarChart3, BookHeart, CalendarCheck, FileText, HeartHandshake, Lock, MessageCircleHeart, ShieldCheck, Settings2, Stethoscope, Users, Video, Brain, Home, ShieldPlus } from "lucide-react";
 import type { Role } from "./store";
 
 export type Feature = { href: string; key: string; title: string; desc: string; icon: any; tag?: "MVP" | "Stretch"; roles: Role[] };
 export const FEATURES: Feature[] = [
   { href: "/check", key: "symptoms", title: "Symptom checker", desc: "Is this normal? Tell us in your own words.", icon: Stethoscope, roles: ["mother"] },
+  { href: "/ask", key: "ask", title: "Ask Bloom", desc: "Everyday questions, answered from reviewed guidance.", icon: MessageCircleQuestion, roles: ["mother", "family"] },
   { href: "/checkin", key: "checkin", title: "Daily check-in", desc: "30 seconds. Mood, sleep, danger signs.", icon: CalendarCheck, roles: ["mother"] },
   { href: "/screening", key: "mind", title: "Mind check (EPDS)", desc: "A routine wellness check for every new mother.", icon: Brain, roles: ["mother"] },
   { href: "/care", key: "care", title: "Talk to a professional", desc: "Video sessions. Free Tele-MANAS always shown.", icon: Video, roles: ["mother"] },

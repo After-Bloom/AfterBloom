@@ -1,7 +1,13 @@
 # Deploying AfterBloom (free tiers only)
 
 ## 1. Supabase
-Run these in the SQL editor, in order: `supabase/migrations/001_schema.sql`, `002_security.sql`, `003_features.sql`, `004_fixes.sql`.
+Run these in the SQL editor, in order: `supabase/migrations/001_schema.sql`, `002_security.sql`, `003_features.sql`, `004_fixes.sql`, `005_care_loop.sql`, `006_depth.sql`.
+
+Optional extras (the app works without them):
+- **Text-message reminders:** set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM` (see `.env.example`). Mothers opt in under Privacy, and the daily job sends one neutral text to those who have not checked in.
+- **Faster follow-up after a RED or AMBER result:** the daily job escalates unanswered follow-ups once a day. For quicker escalation, call `GET /api/cron/loops` every 15 to 30 minutes from any scheduler with `Authorization: Bearer $CRON_SECRET`.
+- **Ask Bloom matching data:** after editing `lib/ask/knowledge.ts`, run `curl http://localhost:3000/api/dev/build-ask-vectors` and commit `data/ask-vectors.json`.
+
 Free projects pause after about 7 days idle and have no automatic backups. The keepalive and backup workflows below cover both.
 
 ## 2. Vercel environment variables

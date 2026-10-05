@@ -7,7 +7,8 @@ import { useApp } from "@/lib/store";
 import { PatientRow, useProData } from "@/lib/data/pro";
 import { EPDS_CONFIG } from "@/lib/epds";
 import { PageHead, Tabs, fmtTime, fmtDate } from "@/components/ui";
-import { TrendChart, EpdsChart } from "@/components/Charts";
+import { TrendChart, EpdsChart, BpChart } from "@/components/Charts";
+import { RISK_ITEMS, riskKeys, riskTier, bpTrend } from "@/lib/risk";
 import { useTr } from "@/lib/i18n";
 import { useNow } from "@/lib/useNow";
 import { roomUrl, canJoin } from "@/lib/slots";
@@ -38,9 +39,10 @@ function CallbackTimer({ flaggedAt, dueAt, urgent }: { flaggedAt: number; dueAt:
   );
 }
 
+const raisedBp = (r: PatientRow) => { const l = r.checkins.filter((c) => c.bp).slice(-1)[0]; return !!bpTrend(r.checkins) || (!!l && Date.now() - new Date(l.date).getTime() < 3 * 86400000 && (l.bp!.sys >= 140 || l.bp!.dia >= 90)); };
 const urgency = (r: PatientRow) => {
   const open = r.flags.filter((f) => !f.resolved);
-  return open.some((f) => URGENT.includes(f.kind)) ? 3 : open.length ? 2 : r.epds.some((e) => e.total >= EPDS_CONFIG.possible) ? 1 : 0;
+  return open.some((f) => URGENT.includes(f.kind)) || r.loop?.status === "worse" || r.loop?.status === "cant_reach" || (r.loop?.status === "no_answer" && r.loop.level === "RED") ? 3 : open.length ? 2 : r.epds.some((e) => e.total >= EPDS_CONFIG.possible) ? 1 : 0;
 };
 
 export default function Pro() {
@@ -101,7 +103,7 @@ export default function Pro() {
             {rows.map((r) => {
               const last = r.epds[r.epds.length - 1];
               const on = sel === r.id, u = urgency(r);
-              const tags = [...(u === 3 ? ["URGENT FLAG"] : []), ...(r.flags.some((f) => !f.resolved && f.kind === "epds") ? ["Callback due"] : [])];
+              const tags = [...(u === 3 ? ["URGENT FLAG"] : []), ...(r.flags.some((f) => !f.resolved && f.kind === "epds") ? ["Callback due"] : []), ...(r.loop ? ["No follow-up reply"] : []), ...(r.shares && raisedBp(r) ? ["Raised BP"] : []), ...(riskTier(r.risk) === "high" ? ["High-risk history"] : [])];
               return (
                 <m.li key={r.id} variants={rise} className="relative">
                   {on && <m.span layoutId="patient-ring" transition={spring.snappy} className="absolute -inset-0.5 rounded-[26px] border-2 border-primary" />}
@@ -143,6 +145,8 @@ export default function Pro() {
                           <div className="mt-2 divide-y divide-line text-sm">{selected.epds.map((e, i) => <div key={i} className="flex items-center justify-between py-1.5"><span>{fmtDate(e.date)}{e.selfHarm ? " · Q10+" : ""}</span><span className="flex items-center gap-2"><b>{e.total}/30</b><span className={`rounded-full px-2 py-0.5 text-xs font-bold ${bandCls(e.total)}`}>{tr(band(e.total))}</span></span></div>)}</div>
                         </>) : <p className="text-sm text-ink-muted">{tr("No screening yet.")}</p>}
                       </section>
+                      {riskKeys(selected.risk).length > 0 && <section><h3 className="mb-2 font-bold">{tr("Recovery profile")}</h3><p className="text-sm">{riskKeys(selected.risk).map((k) => tr(RISK_ITEMS.find((x) => x.k === k)!.label)).join("; ")}</p></section>}
+                      {selected.checkins.some((c) => c.bp) && <section><h3 className="mb-2 font-bold">{tr("Blood pressure")}</h3><BpChart data={selected.checkins.filter((c) => c.bp)} /></section>}
                       <section><h3 className="mb-2 font-bold">{tr("Mood, sleep, appetite")}</h3><TrendChart data={selected.checkins} height={200} /></section>
                       <section><h3 className="mb-2 font-bold">{tr("AMBER/RED symptoms")}</h3>
                         {selected.symptoms.map((l, i) => <div key={i} className="text-sm">{fmtDate(l.date)} · {tr(l.level)} · {l.labels.map((x) => tr(x)).join(", ")}</div>)}

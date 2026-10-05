@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import * as m from "motion/react-m";
 import { AnimatePresence } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, X } from "lucide-react";
-import { useApp, dayStr } from "@/lib/store";
+import { useApp, dayStr, daysSince } from "@/lib/store";
+import { bpPlan, bpTrend } from "@/lib/risk";
+import { BpWatch } from "@/components/BpWatch";
+import { RecoveryProfile } from "@/components/RecoveryProfile";
 import { useActions } from "@/lib/actions";
 import { triageCheckin, DangerAnswers } from "@/lib/triage";
 import { PageHead, Disclaimer } from "@/components/ui";
@@ -65,7 +68,8 @@ export default function Checkin() {
   const [dir, setDir] = useState(1);
   const [mood, setMood] = useState(3), [appetite, setApp] = useState(3), [sleep, setSleep] = useState(5);
   const [d, setD] = useState<DangerAnswers>({ bleeding: false, fever: false, headache: "none", wound: false, breathing: false });
-  const [bpOn, setBpOn] = useState(false), [sys, setSys] = useState(""), [dia, setDia] = useState("");
+  const planNow = bpPlan(s.risk, daysSince(s.mother.birth), s.checkins);
+  const [bpOn, setBpOn] = useState(planNow.due), [sys, setSys] = useState(""), [dia, setDia] = useState("");
   const [out, setOut] = useState<ReturnType<typeof triageCheckin> | null>(null);
   const [editing, setEditing] = useState(false);
 
@@ -88,6 +92,9 @@ export default function Checkin() {
   const submit = () => {
     const bp = bpOn && sys && dia ? { sys: +sys, dia: +dia } : undefined;
     const r = triageCheckin(d, bp);
+    // a pattern across the last few readings (two raised in a row, or a steady rise) raises the level even if today's single reading looks fine
+    const trend = bp ? bpTrend([...s.checkins.filter((c) => dayStr(c.date) !== today), { date: new Date().toISOString(), bp }]) : null;
+    if (trend && r.level !== "RED") { r.level = "AMBER"; r.reasons.push(trend.why); }
     const before = weekCount;
     const rec = { date: new Date().toISOString(), mood, appetite, sleepHours: sleep, level: r.level, bp };
     setOut(r); setShown(true); setBloom(before / 7); setDir(1); setStep(STEPS);
@@ -108,6 +115,8 @@ export default function Checkin() {
   return (
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHead title="Daily check-in" sub="30 seconds. Tap, don't type." tag="First 6 weeks" />
+      <RecoveryProfile />
+      <BpWatch inCheckin />
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
         <div className="card min-w-0 overflow-hidden">
           {!onResult && !showDone && (

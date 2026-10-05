@@ -5,6 +5,8 @@ import { dayStr, useApp, Checkin, State } from "./store";
 import { mapFlag } from "./data/load";
 import type { CrisisKind } from "./triage";
 import type { Level } from "./symptoms";
+import type { Risk } from "./risk";
+import type { LogKind } from "./babylog";
 
 /**
  * Everything the app saves goes through here: update the screen at once, then write to the database.
@@ -30,12 +32,14 @@ export function useActions() {
           bp_sys: rec.bp?.sys ?? null, bp_dia: rec.bp?.dia ?? null, reasons,
         }, { onConflict: "mother_id,day" });
         if (error) fail("Could not save your check-in", error);
+        if (rec.level !== "GREEN") void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level: rec.level, reason: reasons.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
       },
 
       async logSymptom(level: Level, labels: string[]) {
         set((p) => ({ ...p, symptomLogs: [{ date: new Date().toISOString(), text: "", level, labels }, ...p.symptomLogs] }));
         if (!uid || !isMother) return;
         await sb.from("symptom_logs").insert({ mother_id: uid, level, labels }); // only labels and the level are stored, never what she typed
+        if (level !== "GREEN") void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level, reason: labels.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
       },
 
       /** After a RED result: flag, alert her professional, alert family if she agreed. The crisis screen never waits for this. */
@@ -64,7 +68,7 @@ export function useActions() {
       async setConsent(patch: Partial<State["consent"]>) {
         set((p) => ({ ...p, consent: { ...p.consent, ...patch } }));
         if (!uid || !isMother) return;
-        const col: Record<string, string> = { emergencyAlert: "consent_emergency_alert", shareWithPro: "consent_share_pro", familyNote: "consent_family_note", cloudMatch: "consent_cloud_match", emergencyContact: "emergency_contact_name", emergencyPhone: "emergency_contact_phone" };
+        const col: Record<string, string> = { emergencyAlert: "consent_emergency_alert", shareWithPro: "consent_share_pro", familyNote: "consent_family_note", cloudMatch: "consent_cloud_match", emergencyContact: "emergency_contact_name", emergencyPhone: "emergency_contact_phone", sms: "consent_sms" };
         const row: Record<string, any> = {};
         for (const [k, v] of Object.entries(patch)) if (col[k]) row[col[k]] = v;
         const { error } = await sb.from("mothers").update(row).eq("id", uid);
@@ -130,6 +134,26 @@ export function useActions() {
       async setBabyName(name: string) {
         set((p) => ({ ...p, mother: { ...p.mother, babyName: name } }));
         if (uid) await sb.from("mothers").update({ baby_name: name }).eq("id", uid);
+      },
+      /** Her recovery profile (what made this pregnancy or birth higher risk). It changes how often we suggest a blood pressure check. */
+      async setRisk(risk: Risk) {
+        set((p) => ({ ...p, risk }));
+        if (!uid || !isMother) return;
+        const { error } = await sb.from("mothers").update({ risk }).eq("id", uid);
+        if (error) fail("Could not save your profile", error);
+      },
+      async setBirthWeight(kg: number | null) {
+        set((p) => ({ ...p, mother: { ...p.mother, birthWeightKg: kg } }));
+        if (uid && isMother) await sb.from("mothers").update({ birth_weight_kg: kg }).eq("id", uid);
+      },
+      async addBabyLog(kind: LogKind) {
+        const row = { id: crypto.randomUUID(), kind, at: new Date().toISOString() };
+        set((p) => ({ ...p, babyLogs: [row, ...p.babyLogs] }));
+        if (uid && isMother) await sb.from("baby_logs").insert({ id: row.id, mother_id: uid, kind, at: row.at });
+      },
+      async undoBabyLog(id: string) {
+        set((p) => ({ ...p, babyLogs: p.babyLogs.filter((l) => l.id !== id) }));
+        if (uid && isMother) await sb.from("baby_logs").delete().eq("id", id).eq("mother_id", uid);
       },
       async addGrowth(kg: number, cm?: number) {
         set((p) => ({ ...p, weights: [...p.weights, { date: new Date().toISOString(), kg, cm }] }));

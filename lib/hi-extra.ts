@@ -90,4 +90,20 @@ export const HI_EXTRA: Record<string, string> = {
   "We could not save this check-in. Please check your connection and try again.": "यह चेक-इन सहेजा नहीं जा सका। कृपया कनेक्शन जाँचकर दोबारा कोशिश करें।", "We could not save your answers. Please check your connection and take the check again later.": "आपके जवाब सहेजे नहीं जा सके। कृपया कनेक्शन जाँचें और बाद में जाँच दोबारा करें।",
   "Mother": "माँ", "Professional": "विशेषज्ञ", "ASHA worker": "आशा कार्यकर्ता", "Family circle": "परिवार सर्कल", "Sample profile": "नमूना प्रोफ़ाइल", "Alerts": "अलर्ट", "Main": "मुख्य", "Language": "भाषा",
   "You are offline": "आप ऑफ़लाइन हैं", "Cancel ": "रद्द करें",
+  // Ask Bloom
+  "Ask Bloom": "बूम से पूछें", "Your questions": "आपके सवाल", "Everyday questions, answered from reviewed guidance.": "रोज़ के सवाल, जाँचे-परखे मार्गदर्शन से जवाब।",
+  "Ask an everyday question in English, Hindi or Hinglish. Every answer was written in advance by our team. Nothing is made up, and if we do not have a reviewed answer we say so.": "अंग्रेज़ी, हिंदी या हिंग्लिश में रोज़ का कोई भी सवाल पूछें। हर जवाब हमारी टीम ने पहले से लिखा है। कुछ भी अपने-आप नहीं गढ़ा जाता, और अगर हमारे पास जाँचा हुआ जवाब नहीं है तो हम साफ़ बताते हैं।",
+  "Hello, I am Bloom. Ask me anything about your recovery, your baby or how to support a new mother.": "नमस्ते, मैं ब्लूम हूँ। अपनी सेहत, अपने बच्चे या नई माँ की मदद के बारे में कुछ भी पूछें।",
+  "When to see a doctor": "डॉक्टर को कब दिखाएँ", "Written in advance by our team, not by AI. Not a diagnosis.": "हमारी टीम ने पहले से लिखा है, AI ने नहीं। यह निदान नहीं है।",
+  "I do not have a reviewed answer for that, and I never guess.": "इसका मेरे पास जाँचा हुआ जवाब नहीं है, और मैं अंदाज़ा नहीं लगाती।",
+  "Please ask a doctor, or use the symptom checker if something feels wrong in your body.": "कृपया डॉक्टर से पूछें, या शरीर में कुछ गड़बड़ लगे तो सिम्पटम चेकर इस्तेमाल करें।",
+  "Looking for the right answer…": "सही जवाब ढूँढ रही हूँ…", "Your question": "आपका सवाल", "Ask": "पूछें", "e.g. How long will the bleeding last?": "जैसे: खून कितने दिन तक आएगा?",
+  "If something feels wrong in your body right now, use the symptom checker or call 112. This page is for everyday questions.": "अगर अभी शरीर में कुछ गड़बड़ लग रही है तो सिम्पटम चेकर इस्तेमाल करें या 112 पर कॉल करें। यह पेज रोज़ के सवालों के लिए है।",
+  "Take the Mind check": "माइंड चेक करें", "Plan night feeds with family": "परिवार के साथ रात की फ़ीड तय करें", "Baby growth log": "बच्चे के विकास का रिकॉर्ड", "Use the symptom checker": "सिम्पटम चेकर इस्तेमाल करें", "Open the vaccine timeline": "टीकाकरण की समय-सारणी खोलें", "Plan night feeds": "रात की फ़ीड तय करें",
+  // care loop
+  "Checking on you": "आपका हालचाल", "Did you get the care you needed?": "क्या आपको ज़रूरी इलाज मिला?", "Earlier you told us about: {r}": "पहले आपने बताया था: {r}",
+  "Yes, I saw a doctor or nurse": "हाँ, मैंने डॉक्टर या नर्स को दिखाया", "Not yet, I am on my way": "अभी नहीं, मैं जा रही हूँ", "I cannot get there. I need help": "मैं वहाँ नहीं पहुँच पा रही। मुझे मदद चाहिए",
+  "I feel better now": "अब मुझे बेहतर लग रहा है", "I feel worse": "मुझे और बुरा लग रहा है", "Feeling worse": "और बुरा लग रहा है",
+  "Thank you. We will ask again in a few hours.": "धन्यवाद। हम कुछ घंटों बाद फिर पूछेंगे।", "Thank you for telling us. Your care team has been told so they can help.": "बताने के लिए धन्यवाद। आपकी केयर टीम को बता दिया गया है ताकि वे मदद कर सकें।",
+  "I am glad you feel better. Please do tell us if it comes back.": "अच्छा लगा कि आप बेहतर हैं। अगर तकलीफ़ लौटे तो ज़रूर बताएँ।", "Thank you. We are glad you got care.": "धन्यवाद। हमें खुशी है कि आपको इलाज मिला।",
 };

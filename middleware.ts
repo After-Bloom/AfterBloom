@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 // Gatekeeper. Keeps the session fresh and sends people to the right place. It is a convenience layer only:
 // the real protection is Row Level Security in the database and the checks inside each API route.
 // Never gated: the landing page, the crisis screen, the symptom checker and sign-in/sign-up.
-const OPEN = ["/", "/login", "/signup", "/crisis", "/check", "/offline"];
+const OPEN = ["/", "/login", "/signup", "/crisis", "/check", "/ask", "/offline"];
 const HOME: Record<string, string> = { mother: "/home", family: "/family-view", pro: "/pro", moderator: "/moderate", asha: "/asha", admin: "/admin" };
 const AREAS: [string, string[]][] = [
   ["/home", ["mother"]], ["/checkin", ["mother"]], ["/screening", ["mother"]], ["/care", ["mother"]], ["/circles", ["mother"]],

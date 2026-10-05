@@ -23,7 +23,7 @@ export async function loadAccount(sb: SupabaseClient, uid: string) {
 /** Everything a mother sees about herself and her baby. RLS guarantees she only receives her own rows. */
 export async function loadMother(sb: SupabaseClient, uid: string): Promise<Partial<State>> {
   const since = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
-  const [m, ci, sl, ep, fl, fam, bk, vac, gr, ms, ben, sh, ps, au] = await Promise.all([
+  const [m, ci, sl, ep, fl, fam, bk, vac, gr, ms, ben, sh, ps, au, bl] = await Promise.all([
     sb.from("mothers").select("*").eq("id", uid).maybeSingle(),
     sb.from("checkins").select("*").eq("mother_id", uid).gte("day", since).order("day"),
     sb.from("symptom_logs").select("*").eq("mother_id", uid).order("created_at", { ascending: false }).limit(60),
@@ -38,17 +38,20 @@ export async function loadMother(sb: SupabaseClient, uid: string): Promise<Parti
     sb.from("night_shifts").select("*").eq("mother_id", uid).gte("day", new Date(Date.now() - 86400000).toISOString().slice(0, 10)),
     sb.from("partner_screens").select("created_at, yes_count").eq("mother_id", uid).order("created_at", { ascending: false }).limit(10),
     sb.from("audit_log").select("at, actor_name, action").eq("mother_id", uid).order("at", { ascending: false }).limit(50),
+    sb.from("baby_logs").select("id, kind, at").eq("mother_id", uid).gte("at", new Date(Date.now() - 14 * 86400000).toISOString()).order("at", { ascending: false }).limit(600),
   ]);
   const mo: any = m.data;
   if (!mo) return {};
   const shifts: Record<string, string> = {};
   (sh.data ?? []).forEach((r: any) => { shifts[`${r.day}|${r.slot}`] = r.assignee; });
   return {
-    mother: { name: "", babyName: mo.baby_name, birth: mo.birth_date + "T12:00:00", delivery: mo.delivery, city: mo.city ?? "", babySex: mo.baby_sex ?? null, phone: mo.phone ?? "" },
+    mother: { name: "", babyName: mo.baby_name, birth: mo.birth_date + "T12:00:00", delivery: mo.delivery, city: mo.city ?? "", babySex: mo.baby_sex ?? null, phone: mo.phone ?? "", birthWeightKg: mo.birth_weight_kg ? Number(mo.birth_weight_kg) : null },
     consent: {
       emergencyAlert: mo.consent_emergency_alert, shareWithPro: mo.consent_share_pro, familyNote: mo.consent_family_note,
-      emergencyContact: mo.emergency_contact_name ?? "", emergencyPhone: mo.emergency_contact_phone ?? "", cloudMatch: mo.consent_cloud_match,
+      emergencyContact: mo.emergency_contact_name ?? "", emergencyPhone: mo.emergency_contact_phone ?? "", cloudMatch: mo.consent_cloud_match, sms: !!mo.consent_sms,
     },
+    risk: mo.risk ?? {},
+    babyLogs: (bl.data ?? []).map((r: any) => ({ id: r.id, kind: r.kind, at: r.at })),
     neutralNotif: mo.neutral_notifications, circleId: mo.circle_id,
     checkins: (ci.data ?? []).map(mapCheckin),
     symptomLogs: (sl.data ?? []).map((r: any): SymptomLog => ({ date: r.created_at, text: "", level: r.level, labels: r.labels })),

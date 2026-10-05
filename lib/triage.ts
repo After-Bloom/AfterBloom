@@ -124,6 +124,8 @@ export function triageCheckin(d: DangerAnswers, bp?: { sys: number; dia: number 
   if (d.headache === "alone") up("AMBER", "Headache");
   if (d.wound) up("AMBER", "Wound redness or discharge");
   if (bp && (level as Level) !== "RED" && (bp.sys >= 140 || bp.dia >= 90)) up("AMBER", `Raised blood pressure ${bp.sys}/${bp.dia}`);
+  // a raised reading together with a headache is the classic pattern of postpartum pre-eclampsia: treat it as an emergency
+  if (bp && (bp.sys >= 140 || bp.dia >= 90) && d.headache !== "none") up("RED", "Raised blood pressure with a headache");
   return { level, reasons };
 }
 

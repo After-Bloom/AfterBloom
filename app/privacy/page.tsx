@@ -57,6 +57,7 @@ export default function Privacy() {
           <Toggle on={s.consent.shareWithPro} onChange={(v) => act.setConsent({ shareWithPro: v })} label="Share check-in trends with my professional" hint="Urgent flags always reach your professional, so help is never delayed." />
           <Toggle on={s.consent.emergencyAlert} onChange={(v) => act.setConsent({ emergencyAlert: v })} label="Alert my family on a RED result" hint="Only family you invited, with a short neutral message that never says what is wrong." />
           <Toggle on={s.consent.familyNote} onChange={(v) => act.setConsent({ familyNote: v })} label={'Weekly "how to help" note to family'} />
+          <Toggle on={s.consent.sms} onChange={(v) => act.setConsent({ sms: v })} label="Text-message reminders" hint="A daily text to the phone number below if you have not checked in. It never says what the reminder is about. Needs your phone number." />
           <Toggle on={!!s.consent.cloudMatch} onChange={(v) => act.setConsent({ cloudMatch: v })} label="Smarter symptom matching" hint="Sends the words you type (never your name) to our matching service so more ways of describing a symptom are understood. Nothing is stored. Emergency checks always run on your phone first." />
         </section>
       )}

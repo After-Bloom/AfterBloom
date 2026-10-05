@@ -9,6 +9,8 @@ import { useActions } from "@/lib/actions";
 import { useFamilyView } from "@/lib/data/family";
 import { VACCINES, VACCINE_LAST_VERIFIED, MILESTONES } from "@/lib/vaccines";
 import { WEIGHT_REF, ageMonths, Sex } from "@/lib/growth";
+import { weightNotes } from "@/lib/babylog";
+import { FeedingLog } from "@/components/FeedingLog";
 import { PageHead, Tabs, Segmented, fmtDate, Disclaimer } from "@/components/ui";
 import { useTheme } from "@/lib/theme";
 import { useTr } from "@/lib/i18n";
@@ -24,7 +26,7 @@ export default function Baby() {
   const { dark } = useTheme();
   const reduce = useReducedMotion();
   const [tab, setTab] = useState("vax");
-  const [kg, setKg] = useState(""), [cm, setCm] = useState("");
+  const [kg, setKg] = useState(""), [cm, setCm] = useState(""), [bw, setBw] = useState("");
   const family = auth.role === "family";
   const readOnly = family;
 
@@ -40,7 +42,7 @@ export default function Baby() {
   const refData = useMemo(() => ref.p50.map((_, mo) => ({ mo, p3: ref.p3[mo], p50: ref.p50[mo], p97: ref.p97[mo] })), [ref]);
   const babyData = useMemo(() => s.weights.filter((w) => w.kg > 0).map((w) => ({ mo: Math.round(ageMonths(birth, w.date) * 10) / 10, kg: w.kg })), [s.weights, birth]);
 
-  const tabs = family ? [{ id: "vax", label: "Vaccines" }] : [{ id: "vax", label: "Vaccines" }, { id: "growth", label: "Growth" }, { id: "miles", label: "Milestones" }, { id: "pmmvy", label: "Benefits" }];
+  const tabs = family ? [{ id: "vax", label: "Vaccines" }] : [{ id: "vax", label: "Vaccines" }, { id: "feed", label: "Feeding" }, { id: "growth", label: "Growth" }, { id: "miles", label: "Milestones" }, { id: "pmmvy", label: "Benefits" }];
 
   const nextDue = VACCINES.find((v) => !vaccinesDone.includes(v.id));
   return (
@@ -73,9 +75,16 @@ export default function Baby() {
         </m.div>
       )}
 
+      {tab === "feed" && !family && <FeedingLog />}
+
       {tab === "growth" && !family && (
         <section className="card space-y-4">
           <p className="text-sm">{tr("Log {baby}'s weight. The chart shows the trend only; it never says \"malnourished\". That is a doctor's judgement.", { baby: tr(babyName || "Baby") })}</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="min-w-[10rem] flex-1 text-sm font-bold text-plum-800">{tr("Birth weight (kg)")}<input className="input mt-1" inputMode="decimal" placeholder="3.0" value={bw || (s.mother.birthWeightKg ?? "")} onChange={(e) => setBw(e.target.value)} /></label>
+            <button className="btn-soft" disabled={!(+bw > 0)} onClick={() => { void act.setBirthWeight(+bw); setBw(""); }}>{tr("Save")}</button>
+          </div>
+          {weightNotes(s.mother.birthWeightKg, s.weights, age).map((n) => <p key={n.text} role="status" className={`rounded-card border p-3 text-sm ${n.tone === "warn" ? "border-warn/50 bg-warn/10" : "border-line bg-surface-2"}`}>{tr(n.text)}</p>)}
           <Segmented<Sex> label="Baby's sex (for the right reference lines)" value={sex} onChange={(v) => act.setBabySex(v)} options={[{ id: "girl", label: "Girl" }, { id: "boy", label: "Boy" }]} />
           <div className="flex flex-wrap gap-2">
             <label className="min-w-[8rem] flex-1 text-sm font-bold text-plum-800">{tr("Weight (kg)")}<input className="input mt-1" inputMode="decimal" placeholder="3.4" value={kg} onChange={(e) => setKg(e.target.value)} /></label>

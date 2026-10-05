@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/server";
 import { notify, sendFamilyNote } from "@/lib/server/notify";
+import { escalateOverdue } from "@/lib/server/loops";
+import { sendText, smsConfigured, toE164 } from "@/lib/server/channels";
 
 // Runs once a day (Vercel Cron; it sends "Authorization: Bearer $CRON_SECRET"). Idempotent: running it twice does not double-send.
 //  1. gentle check-in reminder to mothers who have not checked in today (neutral wording)
@@ -19,9 +21,9 @@ export async function GET(req: Request) {
   const now = new Date();
   const today = day(now), yesterday = day(new Date(now.getTime() - 86400000)), twoAgo = day(new Date(now.getTime() - 2 * 86400000));
   const since = new Date(now.getTime() - 3 * 86400000).toISOString();
-  const out = { reminders: 0, familyNudges: 0, overdue: 0, weeklyNotes: 0, snapshots: 0 };
+  const out = { reminders: 0, familyNudges: 0, overdue: 0, weeklyNotes: 0, snapshots: 0, loops: 0, texts: 0 };
 
-  const { data: mothers } = await admin.from("mothers").select("id, birth_date, consent_emergency_alert, consent_family_note, profiles(full_name)");
+  const { data: mothers } = await admin.from("mothers").select("id, birth_date, consent_emergency_alert, consent_family_note, consent_sms, phone, profiles(full_name)");
   const early = (mothers ?? []).filter((m: any) => (now.getTime() - new Date(m.birth_date).getTime()) / 86400000 <= 42);
   const ids = early.map((m: any) => m.id);
   const { data: recent } = ids.length ? await admin.from("checkins").select("mother_id, day").in("mother_id", ids).gte("day", twoAgo) : { data: [] as any[] };
@@ -36,6 +38,9 @@ export async function GET(req: Request) {
     if (!done.has(today) && !already(m.id, m.id, "AfterBloom")) {
       await notify(admin, m.id, { mother_id: m.id, kind: "info", title: "AfterBloom", body: "You have a new message.", url: "/checkin" }); // neutral wording for a shared phone
       out.reminders++;
+      // text-message reminder for mothers who asked for one (neutral wording, one a day, only if a gateway is configured)
+      const to = m.consent_sms && smsConfigured() ? toE164(m.phone) : null;
+      if (to && await sendText(to, `AfterBloom: you have a new message. Open ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkin`)) out.texts++;
     }
     if (m.consent_emergency_alert && !done.has(today) && !done.has(yesterday)) {
       const { data: fam } = await admin.from("family_members").select("user_id").eq("mother_id", m.id).eq("status", "active").eq("sees_alerts", true).not("user_id", "is", null);
@@ -57,6 +62,8 @@ export async function GET(req: Request) {
       out.overdue++;
     }
   }
+
+  out.loops = await escalateOverdue(admin); // follow-ups after RED/AMBER results that she never answered
 
   if (now.getUTCDay() === 0) {
     const weekStart = day(new Date(now.getTime() - 6 * 86400000));

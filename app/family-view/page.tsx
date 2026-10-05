@@ -8,6 +8,7 @@ import { useApp } from "@/lib/store";
 import { useActions } from "@/lib/actions";
 import { useFamilyView } from "@/lib/data/family";
 import { MODULES } from "@/lib/education";
+import { MYTHS, SCRIPTS } from "@/lib/education-extra";
 import { PARTNER_QS } from "@/lib/epds";
 import { PSYCHOSIS_SIGNS } from "@/lib/symptoms";
 import { PageHead, Tabs, fmtTime, Disclaimer } from "@/components/ui";
@@ -21,6 +22,7 @@ export default function FamilyView() {
   const tr = useTr();
   const fv = useFamilyView();
   const [tab, setTab] = useState("learn");
+  const hi = s.lang === "hi";
   const [open, setOpen] = useState<string | null>("ppd");
   const [yes, setYes] = useState<boolean[]>(PARTNER_QS.map(() => false));
   const [sent, setSent] = useState<null | { told: boolean }>(null);
@@ -53,7 +55,7 @@ export default function FamilyView() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <PageHead title={tr("Supporting {name}", { name: mom })} sub={tr("Hello {me}. Here is how to help {name} and {baby}.", { me: l.myName, name: mom, baby: l.babyName || tr("the baby") })} />
-      <Tabs value={tab} onChange={setTab} tabs={[{ id: "learn", label: "Learn" }, { id: "screen", label: "What I noticed" }, { id: "feeds", label: "Night feeds" }, { id: "alerts", label: s.alerts.length ? tr("Alerts ({n})", { n: s.alerts.filter((a) => !a.read).length }) : "Alerts" }, { id: "note", label: "This week" }]} />
+      <Tabs value={tab} onChange={setTab} tabs={[{ id: "learn", label: "Learn" }, { id: "myths", label: "Myths & facts" }, { id: "say", label: "What to say" }, { id: "screen", label: "What I noticed" }, { id: "feeds", label: "Night feeds" }, { id: "alerts", label: s.alerts.length ? tr("Alerts ({n})", { n: s.alerts.filter((a) => !a.read).length }) : "Alerts" }, { id: "note", label: "This week" }]} />
 
       {tab === "learn" && (
         <m.div variants={stagger()} initial="hidden" animate="show" className="space-y-3">
@@ -71,6 +73,31 @@ export default function FamilyView() {
             <button className="btn mt-3 bg-danger text-white dark:text-[#1C1117]" onClick={() => openCrisis({ kind: "psychosis", reason: "Family reported warning signs" })}>{tr("I see these signs")}</button>
           </div>
           <Link href="/baby" className="card flex items-center gap-3 !p-4 font-semibold text-plum-800"><Syringe className="h-5 w-5 text-primary" aria-hidden />{tr("See {baby}'s vaccine timeline", { baby: l.babyName || tr("the baby") })}</Link>
+        </m.div>
+      )}
+
+      {tab === "myths" && (
+        <m.div variants={stagger()} initial="hidden" animate="show" className="space-y-3">
+          <p className="text-sm text-ink-muted">{tr("Well-meant advice can sometimes harm. Here is what is true.")}</p>
+          {MYTHS.map((x) => (
+            <m.section variants={rise} key={x.myth} className="card space-y-2">
+              <p className="flex items-start gap-2"><span className="mt-0.5 rounded-full bg-danger/15 px-2 py-0.5 text-xs font-bold uppercase text-danger">{tr("Myth")}</span><span className="font-semibold text-ink">{hi ? x.hi_myth : x.myth}</span></p>
+              <p className="flex items-start gap-2"><span className="mt-0.5 rounded-full bg-ok/15 px-2 py-0.5 text-xs font-bold uppercase text-ok">{tr("Fact")}</span><span>{hi ? x.hi_fact : x.fact}</span></p>
+            </m.section>
+          ))}
+        </m.div>
+      )}
+
+      {tab === "say" && (
+        <m.div variants={stagger()} initial="hidden" animate="show" className="space-y-3">
+          <p className="text-sm text-ink-muted">{tr("The right sentence at the right moment matters. Use your own words, in your own language.")}</p>
+          {SCRIPTS.map((x) => (
+            <m.section variants={rise} key={x.situation} className="card space-y-2">
+              <h2 className="font-serif text-lg text-plum-900">{hi ? x.hi_situation : x.situation}</h2>
+              <p className="rounded-control bg-ok/10 p-3"><b className="text-ok">{tr("Try saying")}:</b> {hi ? x.hi_say : x.say}</p>
+              <p className="rounded-control bg-danger/10 p-3"><b className="text-danger">{tr("Avoid")}:</b> {hi ? x.hi_avoid : x.avoid}</p>
+            </m.section>
+          ))}
         </m.div>
       )}
 

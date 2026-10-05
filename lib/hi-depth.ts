@@ -1,0 +1,48 @@
+// Hindi for the recovery profile, blood pressure watch, feeding log, recovery report, family myths and ASHA additions. Draft pending clinician and native-speaker review.
+export const HI_DEPTH: Record<string, string> = {
+  // recovery profile
+  "Your recovery profile": "आपकी रिकवरी प्रोफ़ाइल", "No extra risks that you told us about.": "आपने कोई अतिरिक्त जोखिम नहीं बताया।", "We will remind you to check your blood pressure.": "हम आपको ब्लड प्रेशर जाँचने की याद दिलाएँगे।",
+  "Edit": "बदलें", "Help us watch for the right things": "सही चीज़ों पर नज़र रखने में हमारी मदद करें",
+  "Tick anything that was true for you. This only changes how often we remind you to check your blood pressure, and it appears on your doctor's summary. You can change it any time.": "जो आप पर लागू हो उस पर निशान लगाएँ। इससे सिर्फ़ यह बदलता है कि हम कितनी बार ब्लड प्रेशर जाँचने की याद दिलाएँ, और यह आपके डॉक्टर की समरी में दिखता है। आप इसे कभी भी बदल सकती हैं।",
+  "High blood pressure or pre-eclampsia in this pregnancy": "इस गर्भावस्था में हाई ब्लड प्रेशर या प्री-एक्लेम्पसिया", "Or fits (eclampsia), or a doctor told you your BP was high.": "या दौरे (एक्लेम्पसिया), या डॉक्टर ने बताया कि आपका BP ज़्यादा था।",
+  "Heavy bleeding after delivery": "डिलीवरी के बाद ज़्यादा खून बहना", "You needed extra medicine, a transfusion, or were told you lost a lot of blood.": "आपको अतिरिक्त दवा या खून चढ़ाना पड़ा, या बताया गया कि बहुत खून बह गया।",
+  "Diabetes in pregnancy": "गर्भावस्था में डायबिटीज़", "Sugar was high during this pregnancy.": "इस गर्भावस्था में शुगर ज़्यादा थी।",
+  "Anaemia (low haemoglobin)": "एनीमिया (हीमोग्लोबिन कम)", "You were told your haemoglobin was low or took iron injections.": "आपको बताया गया कि हीमोग्लोबिन कम है या आयरन के इंजेक्शन लगे।",
+  "C-section": "सिज़ेरियन", "Twins or more": "जुड़वाँ या ज़्यादा बच्चे", "Baby born early (before 37 weeks)": "बच्चा समय से पहले हुआ (37 हफ़्ते से पहले)", "Could not save. Please try again.": "सेव नहीं हो सका। कृपया दोबारा कोशिश करें।",
+  // blood pressure watch
+  "Blood pressure watch": "ब्लड प्रेशर पर नज़र", "Check your blood pressure every day": "रोज़ अपना ब्लड प्रेशर जाँचें", "Check your blood pressure every other day": "हर दूसरे दिन अपना ब्लड प्रेशर जाँचें",
+  "Check your blood pressure once in these days": "इन दिनों में एक बार अपना ब्लड प्रेशर जाँचें", "Check your blood pressure now and then": "बीच-बीच में अपना ब्लड प्रेशर जाँचें",
+  "You had high blood pressure or heavy bleeding, so a quick daily check is the best early warning for the dangerous problems that can start after birth.": "आपको हाई ब्लड प्रेशर या ज़्यादा खून बहने की समस्या थी, इसलिए रोज़ की एक छोटी जाँच प्रसव के बाद शुरू हो सकने वाली खतरनाक समस्याओं की सबसे अच्छी पहली चेतावनी है।",
+  "Days 3 to 6 are when blood pressure problems most often start, even if yours was normal in pregnancy. Free at your ANM, ASHA or PHC if you have no machine.": "दिन 3 से 6 में ब्लड प्रेशर की समस्या सबसे ज़्यादा शुरू होती है, भले ही गर्भावस्था में आपका सामान्य रहा हो। मशीन न हो तो ANM, आशा या PHC पर मुफ़्त जाँच करवाएँ।",
+  "Because of what you told us about your pregnancy, a reading every few days in the first two weeks is wise.": "आपने गर्भावस्था के बारे में जो बताया उसे देखते हुए, पहले दो हफ़्तों में कुछ दिनों पर एक बार रीडिंग लेना समझदारी है।",
+  "Two raised blood pressure readings in a row": "लगातार दो बार ब्लड प्रेशर ज़्यादा आया", "Your blood pressure has been rising over the last few days": "पिछले कुछ दिनों में आपका ब्लड प्रेशर बढ़ रहा है", "Raised blood pressure with a headache": "ब्लड प्रेशर ज़्यादा और सिरदर्द",
+  "Please check again after resting, and call your doctor or ANM today if it stays high. Go to hospital now if you also have a headache, blurred vision or pain under the ribs.": "आराम करके दोबारा जाँचें, और ज़्यादा ही रहे तो आज ही डॉक्टर या ANM को फ़ोन करें। सिरदर्द, धुंधला दिखना या पसलियों के नीचे दर्द भी हो तो अभी अस्पताल जाएँ।",
+  "How to measure it right": "सही तरीके से कैसे नापें", "Add today's reading": "आज की रीडिंग जोड़ें",
+  "Sit quietly for 5 minutes, back supported, feet flat, and do not talk.": "5 मिनट शांत बैठें, पीठ टिकाकर, पैर ज़मीन पर, और बात न करें।", "No tea, coffee or smoking for 30 minutes before.": "पहले 30 मिनट तक चाय, कॉफ़ी या धूम्रपान नहीं।",
+  "Rest your bare upper arm on a table, cuff at the level of your heart.": "खुली बाँह मेज़ पर रखें, कफ़ दिल के बराबर ऊँचाई पर।", "Take two readings a minute apart and enter the second one.": "एक मिनट के अंतर पर दो रीडिंग लें और दूसरी दर्ज करें।", "Use the same arm and about the same time each day.": "रोज़ वही बाँह और लगभग वही समय रखें।",
+  // feeding log
+  "Feeding": "दूध पिलाना", "Feeding and nappies": "दूध और डायपर", "Tap each time {baby} feeds or has a nappy. We compare with what is usual for {n} days old and tell you when to ask a doctor.": "{baby} के दूध पीने या डायपर बदलने पर हर बार टैप करें। हम {n} दिन के बच्चे के सामान्य पैटर्न से तुलना करते हैं और बताते हैं कि कब डॉक्टर से पूछें।",
+  "Fed": "दूध पिलाया", "Wet nappy": "गीला डायपर", "Stool": "मल", "usual {n}+": "सामान्य {n}+", "Last feed": "आख़िरी बार दूध", "No feeds logged yet.": "अभी तक कोई फ़ीड दर्ज नहीं।", "Undo last": "आख़िरी हटाएँ",
+  "{n} min ago": "{n} मिनट पहले", "{h} h {m} min ago": "{h} घंटे {m} मिनट पहले", "Last 7 days": "पिछले 7 दिन", "Day": "दिन", "Feeds": "फ़ीड", "Wet": "गीले", "Stools": "मल", "Today": "आज", "Yesterday": "कल",
+  "Yesterday there were fewer wet nappies than usual for this age. Feed often today, and see a doctor today if it happens again or the baby is sleepy.": "कल इस उम्र के हिसाब से गीले डायपर कम थे। आज बार-बार दूध पिलाएँ, और दोबारा ऐसा हो या बच्चा सुस्त हो तो आज ही डॉक्टर को दिखाएँ।",
+  "Yesterday there were fewer feeds than the 8 to 12 a newborn usually has. Wake the baby for feeds if more than 3 hours pass, and ask your doctor or ANM if the baby will not feed.": "कल नवजात की सामान्य 8-12 फ़ीड से कम फ़ीड हुईं। 3 घंटे से ज़्यादा हो जाएँ तो बच्चे को जगाकर पिलाएँ, और बच्चा दूध न ले तो डॉक्टर या ANM से पूछें।",
+  "It has been more than 5 hours since the last logged feed. If the baby is not feeding, call your doctor now.": "आख़िरी दर्ज फ़ीड को 5 घंटे से ज़्यादा हो गए। बच्चा दूध नहीं ले रहा तो अभी डॉक्टर को फ़ोन करें।",
+  "Most babies are back to birth weight by 2 weeks. Ask your doctor or ANM to look at feeding.": "ज़्यादातर बच्चे 2 हफ़्ते तक जन्म के वज़न पर लौट आते हैं। डॉक्टर या ANM से दूध पिलाना जँचवाएँ।",
+  "Breastfeeding help": "स्तनपान में मदद", "Good signs: about 6 or more wet nappies a day from around day 5, regular yellow stools, and a baby who is alert between feeds. Sore nipples, hard breasts and worry about milk are very common, and help is free from your ANM or ASHA.": "अच्छे संकेत: लगभग पाँचवें दिन से दिन में 6 या ज़्यादा गीले डायपर, नियमित पीला मल, और फ़ीड के बीच जागरूक बच्चा। निप्पल में दर्द, सख़्त स्तन और दूध की चिंता बहुत आम हैं, और ANM या आशा से मदद मुफ़्त है।",
+  "Ask Bloom about feeding": "बूम से दूध पिलाने के बारे में पूछें", "Birth weight (kg)": "जन्म के समय वज़न (किलो)",
+  // recovery report
+  "Recovery": "रिकवरी", "Your first six weeks": "आपके पहले छह हफ़्ते", "One row for each week since the birth. It shows how often you checked in and how you were, never a grade.": "जन्म के बाद हर हफ़्ते की एक पंक्ति। यह दिखाती है कि आपने कितनी बार चेक-इन किया और आप कैसी थीं, कोई ग्रेड नहीं।",
+  "Week {n}": "हफ़्ता {n}", "This week": "इस हफ़्ते", "Mood": "मूड", "Sleep (h)": "नींद (घंटे)", "Highest BP": "सबसे ज़्यादा BP", "{n} urgent signs": "{n} गंभीर संकेत", "{n} to watch": "{n} पर नज़र रखें",
+  "Recovery profile": "रिकवरी प्रोफ़ाइल", "Not filled in yet.": "अभी भरा नहीं गया।", "No extra risks reported.": "कोई अतिरिक्त जोखिम नहीं बताया गया।", "birth weight": "जन्म का वज़न", "last weight": "आख़िरी वज़न",
+  // family
+  "Myths & facts": "मिथक और सच", "What to say": "क्या कहें", "Well-meant advice can sometimes harm. Here is what is true.": "नेक नीयत की सलाह कभी-कभी नुकसान कर सकती है। सच यह है।", "Myth": "मिथक", "Fact": "सच",
+  "The right sentence at the right moment matters. Use your own words, in your own language.": "सही समय पर सही वाक्य मायने रखता है। अपने शब्दों में, अपनी भाषा में कहें।", "Try saying": "यह कहें", "Avoid": "यह न कहें",
+  // asha
+  "{n} visits are saved on this phone and will be sent when you are online.": "{n} विज़िट इस फ़ोन में सेव हैं और ऑनलाइन होने पर भेज दी जाएँगी।", "Show": "दिखाएँ", "All mothers": "सभी माँएँ", "Visit due or late": "विज़िट बाकी या देर से", "High risk": "ज़्यादा जोखिम", "No one matches this filter.": "इस फ़िल्टर में कोई नहीं है।",
+  "Raised blood pressure in the last 3 days": "पिछले 3 दिनों में ब्लड प्रेशर ज़्यादा", "Has not confirmed she got care": "यह पुष्टि नहीं की कि इलाज मिला", "{n} risk factors from pregnancy or birth": "गर्भावस्था या प्रसव से {n} जोखिम कारक",
+  "Day {n} visit is {d} days late": "दिन {n} की विज़िट {d} दिन देर से", "Day {n} visit is due today": "दिन {n} की विज़िट आज बाकी है", "Day {n} visit is due in {d} days": "दिन {n} की विज़िट {d} दिन में बाकी है",
+  "Visit note (optional)": "विज़िट नोट (वैकल्पिक)", "Type or tap the microphone and speak": "टाइप करें या माइक दबाकर बोलें", "Stop": "रोकें", "The mother can read notes about her own visits. Write only what you would say to her.": "माँ अपनी विज़िट के नोट पढ़ सकती है। वही लिखें जो आप उससे कह सकें।",
+  // privacy and pro
+  "Text-message reminders": "टेक्स्ट मैसेज रिमाइंडर", "A daily text to the phone number below if you have not checked in. It never says what the reminder is about. Needs your phone number.": "अगर आपने चेक-इन नहीं किया तो नीचे दिए नंबर पर रोज़ एक टेक्स्ट। इसमें कभी नहीं लिखा होता कि रिमाइंडर किस बारे में है। आपका फ़ोन नंबर चाहिए।",
+  "No follow-up reply": "फ़ॉलो-अप का जवाब नहीं", "Raised BP": "ब्लड प्रेशर ज़्यादा", "High-risk history": "ज़्यादा जोखिम का इतिहास",
+};

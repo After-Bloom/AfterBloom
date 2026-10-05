@@ -3,6 +3,8 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import type { CrisisKind } from "./triage";
 import type { Level } from "./symptoms";
 import type { EpdsBand } from "./epds";
+import type { Risk } from "./risk";
+import type { BabyLog } from "./babylog";
 import { loc } from "./locale";
 import { supabase } from "./supabase/client";
 import { loadAccount, loadMother, mapAlert } from "./data/load";
@@ -21,24 +23,25 @@ export type Audit = { at: string; who: string; what: string };
 
 export type State = {
   lang: Lang;
-  mother: { name: string; babyName: string; birth: string; delivery: string; city: string; babySex: "boy" | "girl" | null; phone: string };
+  mother: { name: string; babyName: string; birth: string; delivery: string; city: string; babySex: "boy" | "girl" | null; phone: string; birthWeightKg: number | null };
   checkins: Checkin[]; symptomLogs: SymptomLog[]; epds: EpdsResult[]; flags: Flag[];
   family: FamilyMember[]; shifts: Record<string, string>; partnerScreens: { date: string; yes: number }[];
-  consent: { emergencyAlert: boolean; shareWithPro: boolean; familyNote: boolean; emergencyContact: string; emergencyPhone: string; cloudMatch: boolean | null };
+  consent: { emergencyAlert: boolean; shareWithPro: boolean; familyNote: boolean; emergencyContact: string; emergencyPhone: string; cloudMatch: boolean | null; sms: boolean };
   bookings: Booking[]; vaccinesDone: string[]; milestonesDone: string[]; weights: { date: string; kg: number; cm?: number }[]; benefits: string[];
   alerts: Alert[]; audit: Audit[];
   pinHash: string | null; neutralNotif: boolean; circleId: string | null;
+  risk: Risk; babyLogs: BabyLog[];
 };
 
 export type Auth = { status: "loading" | "guest" | "user"; userId?: string; role?: Role; name?: string };
 
 export const emptyState = (): State => ({
   lang: "en",
-  mother: { name: "", babyName: "", birth: new Date().toISOString(), delivery: "Normal", city: "", babySex: null, phone: "" },
+  mother: { name: "", babyName: "", birth: new Date().toISOString(), delivery: "Normal", city: "", babySex: null, phone: "", birthWeightKg: null },
   checkins: [], symptomLogs: [], epds: [], flags: [], family: [], shifts: {}, partnerScreens: [],
-  consent: { emergencyAlert: false, shareWithPro: true, familyNote: false, emergencyContact: "", emergencyPhone: "", cloudMatch: null },
+  consent: { emergencyAlert: false, shareWithPro: true, familyNote: false, emergencyContact: "", emergencyPhone: "", cloudMatch: null, sms: false },
   bookings: [], vaccinesDone: [], milestonesDone: [], weights: [], benefits: [], alerts: [], audit: [],
-  pinHash: null, neutralNotif: true, circleId: null,
+  pinHash: null, neutralNotif: true, circleId: null, risk: {}, babyLogs: [],
 });
 
 const DAY = 86400000;
