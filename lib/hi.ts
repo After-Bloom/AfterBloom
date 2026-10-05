@@ -1,5 +1,6 @@
 import { HI_EXTRA } from "./hi-extra";
 import { HI_DEPTH } from "./hi-depth";
+import { HI_JOURNEY } from "./hi-journey";
 // Hindi translations. Key = the English string used in the UI. Wording is a draft pending clinician review.
 export const NAMES: [string, string][] = [
   ["Dr. Ananya Rao (sample)", "डॉ. अनन्या राव (नमूना)"],
@@ -431,4 +432,4 @@ const BASE: Record<string, string> = {
   "Real ASHA onboarding and district pilots with NHM. Depression screening is not currently part of HBNC home visits (days 3, 7, 14, 21, 28, 42).": "एनएचएम के साथ असली आशा जुड़ाव और ज़िला स्तर के पायलट। अवसाद की जाँच अभी एचबीएनसी गृह भेंटों (दिन 3, 7, 14, 21, 28, 42) का हिस्सा नहीं है।",
 };
 
-export const HI: Record<string, string> = { ...HI_DATA, ...HI_EXTRA, ...HI_DEPTH, ...BASE };
+export const HI: Record<string, string> = { ...HI_DATA, ...HI_EXTRA, ...HI_DEPTH, ...HI_JOURNEY, ...BASE };

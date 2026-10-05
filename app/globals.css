@@ -108,3 +108,20 @@ button, a, [role="button"] { touch-action: manipulation; }
   body { background: white; }
   main { padding: 0 !important; margin: 0 !important; }
 }
+
+/* "The Little Journey" landing page. Every loop is .idle, so it pauses off-screen / in a hidden tab and stops for reduced motion.
+   Only transform and opacity change. Keep every movement small and slow. */
+.jn-zzz { opacity: 0; animation: jnZ 3.6s ease-in infinite; }
+.jn-twinkle { transform-box: fill-box; transform-origin: 50% 50%; animation: jnTw 3.8s ease-in-out infinite; }
+.jn-glow { animation: jnGlow 5.5s ease-in-out infinite; }
+@keyframes jnZ { 0% { opacity: 0; transform: translate(0,0); } 25% { opacity: .9; } 100% { opacity: 0; transform: translate(8px,-18px); } }
+@keyframes jnTw { 0%,100% { opacity: .35; transform: scale(.85); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes jnGlow { 0%,100% { opacity: .55; } 50% { opacity: .95; } }
+/* the standing mother: slow sway, a flowing dupatta, a blink every few seconds */
+.jn-sway { transform-box: fill-box; transform-origin: 50% 100%; animation: jnSway 6.5s ease-in-out infinite; }
+.jn-dupatta { transform-box: fill-box; transform-origin: 90% 0%; animation: jnDup 5.5s ease-in-out infinite; }
+.jn-blink { transform-box: fill-box; transform-origin: 50% 50%; animation: jnBlink 5.6s ease-in-out infinite; }
+.jn-blink-b { animation-delay: 1.9s; }
+@keyframes jnSway { 0%,100% { transform: rotate(-1.1deg); } 50% { transform: rotate(1.1deg); } }
+@keyframes jnDup { 0%,100% { transform: rotate(1.6deg); } 50% { transform: rotate(-3deg); } }
+@keyframes jnBlink { 0%,90%,100% { transform: scaleY(1); } 94% { transform: scaleY(.08); } }

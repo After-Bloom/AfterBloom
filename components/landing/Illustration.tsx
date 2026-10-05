@@ -2,6 +2,7 @@
 import * as m from "motion/react-m";
 import { MotionValue, useMotionValue, useTransform } from "motion/react";
 import { BloomShape } from "./Bloom";
+import { Standing } from "./Standing";
 
 // Mother and baby, drawn as separate layered groups so each can move on its own:
 // #bg-shapes, #petals, #figure (#mother, #baby, #dupatta), #flower.
@@ -27,9 +28,15 @@ type Props = {
   /** reduced motion: no petals, no loops, no parallax */
   still?: boolean;
   label: string;
+  /** colour of the soft circle behind her (changes with each stop of the journey) */
+  tint?: string;
+  /** how open the flower is, 0 bud to 1 bloom */
+  flower?: MotionValue<number> | number;
+  /** heavy eyes, for the sleepless-nights stop */
+  sleepy?: boolean;
 };
 
-export function Illustration({ p, idle, still = false, label }: Props) {
+export function Illustration({ p, idle, still = false, label, tint, flower, sleepy = false }: Props) {
   const zero = useMotionValue(0);
   const src = still || !p ? zero : p;
   const bgY = useTransform(src, [0, 0.4], [0, -26]);
@@ -49,7 +56,7 @@ export function Illustration({ p, idle, still = false, label }: Props) {
       </defs>
 
       <m.g id="bg-shapes" style={{ y: bgY }}>
-        <circle cx="200" cy="270" r="190" style={{ fill: "rgb(var(--plum-100))" }} />
+        <circle cx="200" cy="270" r="190" style={{ fill: tint ?? "rgb(var(--plum-100))", transition: "fill .8s ease" }} />
         <circle cx="200" cy="270" r="190" fill="url(#ab-glow)" className="dark:opacity-20" />
         <circle cx="332" cy="86" r="46" fill="#8DB496" opacity=".24" />
         <circle cx="60" cy="376" r="34" fill="#F2C36B" opacity=".3" />
@@ -64,44 +71,17 @@ export function Illustration({ p, idle, still = false, label }: Props) {
         ))}
       </m.g>
 
-      <m.g id="figure" style={{ y: figY }} clipPath="url(#ab-badge)">
-        <g className={`${loop}animate-breathe origin-fill-bottom`}>
-          <g id="mother">
-            <path d="M96 460 C96 388 132 336 200 326 C268 336 304 388 304 460Z" fill="url(#ab-kurta)" />
-            <path d="M176 331 Q200 354 224 331" stroke="#E0A63B" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <path d="M187 298 L187 324 Q200 334 213 324 L213 298Z" fill="#E3A987" />
-            <path d="M160 266 C154 214 246 214 240 266 C238 304 162 304 160 266Z" fill="#3B1F2B" />
-            <ellipse cx="200" cy="270" rx="36" ry="42" fill="#EBB896" />
-            <path d="M184 270 q6 6 12 0 M204 270 q6 6 12 0" stroke="#5A3340" strokeWidth="2.6" fill="none" strokeLinecap="round" />
-            <path d="M193 292 q7 6 14 0" stroke="#B04A56" strokeWidth="2.6" fill="none" strokeLinecap="round" />
-            <circle cx="177" cy="284" r="6" fill="#F2A7A0" opacity=".5" /><circle cx="223" cy="284" r="6" fill="#F2A7A0" opacity=".5" />
-            <circle cx="200" cy="249" r="3.2" fill="#C0392B" />
-            <path d="M112 446 C128 392 168 380 214 396 C262 410 286 424 292 446 C250 462 150 466 112 446Z" fill="#A83E4B" />
-          </g>
-
-          <g id="baby">
-            <path d="M158 410 C156 372 214 356 256 372 C282 384 286 420 262 436 C230 452 164 446 158 410Z" fill="url(#ab-swaddle)" />
-            <path d="M170 402 C200 388 232 386 268 398" stroke="#E0A63B" strokeWidth="2" fill="none" opacity=".7" strokeLinecap="round" />
-            <circle cx="246" cy="378" r="21" fill="#F0C4A4" />
-            <path d="M233 364 q13 -9 26 0" stroke="#3B1F2B" strokeWidth="3" fill="none" strokeLinecap="round" />
-            <path d="M238 380 q4 4 8 0 M250 380 q4 4 8 0" stroke="#5A3340" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-            <circle cx="235" cy="388" r="4" fill="#F2A7A0" opacity=".55" /><circle cx="259" cy="388" r="4" fill="#F2A7A0" opacity=".55" />
-            <ellipse cx="274" cy="428" rx="14" ry="10" fill="#EBB896" /><ellipse cx="150" cy="436" rx="14" ry="10" fill="#EBB896" />
-          </g>
-
-          <g id="dupatta" className={`${loop}animate-dupatta origin-fill-top`}>
-            <path d="M154 272 C146 198 254 198 246 272 C240 236 160 236 154 272Z" fill="url(#ab-dupatta)" stroke="#E0A63B" strokeWidth="2" />
-            <path d="M156 282 C134 302 116 354 104 442 L132 454 C140 394 160 348 188 328Z" fill="url(#ab-dupatta)" stroke="#E0A63B" strokeWidth="2" />
-            <path d="M244 282 C266 302 284 354 296 442 L268 454 C260 394 240 348 212 328Z" fill="url(#ab-dupatta)" stroke="#E0A63B" strokeWidth="2" />
-          </g>
-        </g>
+      <m.g id="figure" style={{ y: figY }}>
+        <g transform="translate(84 92) scale(1.56)"><Standing sleepy={sleepy} still={still} /></g>
       </m.g>
 
       <m.g id="flower" style={{ y: flowerY }}>
-        <g transform="translate(336 344)" style={{ "--b": 0.14 } as React.CSSProperties}>
-          <path d="M0 6 C-3 40 3 70 0 108" stroke="#7A9A80" strokeWidth="4" fill="none" strokeLinecap="round" />
-          <path d="M0 78 C-22 74 -34 62 -38 44 C-18 44 -3 58 0 78Z" fill="#8DB496" />
-          <g transform="scale(.62)"><BloomShape /></g>
+        <g transform="translate(336 344)">
+          <m.g style={{ "--b": flower ?? 0.14 } as React.CSSProperties}>
+            <path d="M0 6 C-3 40 3 70 0 108" stroke="#7A9A80" strokeWidth="4" fill="none" strokeLinecap="round" />
+            <path d="M0 78 C-22 74 -34 62 -38 44 C-18 44 -3 58 0 78Z" fill="#8DB496" />
+            <g transform="scale(.62)"><BloomShape /></g>
+          </m.g>
         </g>
       </m.g>
     </svg>
