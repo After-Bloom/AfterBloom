@@ -126,7 +126,7 @@ node --test tests/epds.test.ts tests/risk.test.ts  # automated tests
 
 ## Deployment link
 
-*(To be added.)*
+(https://after-bloom.vercel.app/)
 
 ---
 
