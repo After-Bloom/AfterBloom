@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { adminClient, currentUser } from "@/lib/supabase/server";
 import { encrypt } from "@/lib/server/crypto";
 import { alertFamily, notify, prosOf } from "@/lib/server/notify";
+import { notifyTargets } from "@/lib/server/routing";
+import { recordEpds, shouldNotify } from "@/lib/server/signals";
 import { EPDS, EPDS_CONFIG, scoreEpds } from "@/lib/epds";
 import { limited } from "@/lib/server/limit";
 
@@ -25,15 +27,20 @@ export async function POST(req: Request) {
   const { data: row, error } = await admin.from("epds_results").insert({ mother_id: user.id, total: r.total, band: r.band, self_harm: r.selfHarm, answers_enc: encrypt(JSON.stringify(a)) }).select("id, created_at").single();
   if (error) return NextResponse.json({ error: "could not save" }, { status: 500 });
 
+  // every result is also saved as a signal and compared with her earlier alerts (a repeat is held back, a rise or a safety signal never is)
+  const recorded = await recordEpds(admin, user.id, { id: row.id, total: r.total, band: r.band, self_harm: r.selfHarm, created_at: row.created_at });
+  const tell = r.selfHarm || shouldNotify(recorded);
+
   let flag: any = null;
-  const pros = (r.selfHarm || r.band === "probable") ? await prosOf(admin, user.id) : [];
   if (r.selfHarm) {
+    const pros = await prosOf(admin, user.id); // safety: everyone matched with her, always
     ({ data: flag } = await admin.from("flags").insert({ mother_id: user.id, kind: "q10", text: "EPDS question 10 positive: thoughts of self-harm", due_at: new Date().toISOString() }).select("*").single());
     await Promise.all(pros.map((p) => notify(admin, p, { mother_id: user.id, kind: "emergency", title: "URGENT: immediate callback", body: `${user.name || "A patient"}: EPDS question 10 positive`, url: "/pro" })));
     await alertFamily(admin, user.id, (user.name || "She").split(" ")[0]);
   } else if (r.band === "probable") {
     const hours = 48;
     ({ data: flag } = await admin.from("flags").insert({ mother_id: user.id, kind: "epds", text: `EPDS ${r.total}: probable depression`, due_at: new Date(Date.now() + hours * 3600000).toISOString() }).select("*").single());
+    const pros = tell ? await notifyTargets(admin, user.id, ["MOOD"]) : []; // the callback flag is always created; only a repeat ping is held back
     await Promise.all(pros.map((p) => notify(admin, p, { mother_id: user.id, kind: "callback", title: "Callback within 24 to 48 hours", body: `${user.name || "A patient"}: EPDS ${r.total}`, url: "/pro" })));
   }
   return NextResponse.json({ band: r.band, selfHarm: r.selfHarm, createdAt: row.created_at, flag });

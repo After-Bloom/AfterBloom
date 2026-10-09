@@ -1,6 +1,8 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { notify, prosOf } from "./notify";
+import { notify } from "./notify";
+import { notifyTargets } from "./routing";
+import { recordLoopSignal } from "./signals";
 import { LOOP, LoopAnswer, LoopLevel, hoursFromNow } from "../careLoop";
 
 /** Family are told only if she agreed in advance, and the wording never says what is wrong (safe on a shared lock screen). */
@@ -44,7 +46,9 @@ export async function answerLoop(admin: SupabaseClient, motherId: string, loopId
 
   if (answer === "cant_reach" || answer === "worse") {
     const first = await firstName(admin, motherId);
-    const pros = await prosOf(admin, motherId);
+    // saved as a follow-up of the alert that started this loop; a mother who says she is worse or stuck always reaches a human
+    const rec = await recordLoopSignal(admin, loop, answer);
+    const pros = await notifyTargets(admin, motherId, rec.signal?.relatedTo ? [rec.concern] : []);
     const why = answer === "worse" ? "says she feels worse" : "cannot get to care";
     await Promise.all(pros.map((p) => notify(admin, p, { mother_id: motherId, kind: "emergency", title: "URGENT: follow-up", body: `${first} ${why} after a ${loop.level} result (${loop.reason || "danger sign"}).`, url: "/pro" })));
     await tellFamily(admin, motherId, answer === "worse" ? `${first} needs you now. Please call her or go to her.` : `${first} may need help getting to a doctor. Please call her.`);
@@ -63,7 +67,8 @@ export async function escalateOverdue(admin: SupabaseClient) {
     const { data: claimed } = await admin.from("care_loops").update({ status: "no_answer", escalated_at: new Date().toISOString() }).eq("id", l.id).eq("status", "open").select("id");
     if (!claimed?.length) continue;
     const first = await firstName(admin, l.mother_id);
-    const pros = await prosOf(admin, l.mother_id);
+    const rec = await recordLoopSignal(admin, l, "no_answer"); // a follow-up of the alert that started the loop; never held back
+    const pros = await notifyTargets(admin, l.mother_id, rec.signal?.relatedTo ? [rec.concern] : []);
     await Promise.all(pros.map((p) => notify(admin, p, { mother_id: l.mother_id, kind: l.level === "RED" ? "emergency" : "callback", title: l.level === "RED" ? "URGENT: no reply after emergency alert" : "No reply to follow-up", body: `${first} has not answered the follow-up after a ${l.level} result (${l.reason || "danger sign"}). Please call her.`, url: "/pro" })));
     await tellFamily(admin, l.mother_id, `${first} has not replied to AfterBloom. Please call her or go to her.`);
     escalated++;

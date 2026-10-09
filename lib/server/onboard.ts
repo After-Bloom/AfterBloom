@@ -1,10 +1,16 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { loadContext, ownerOf } from "./routingCore";
 
 /** Match a mother with the psychologist or counsellor who has the fewest patients, so an elevated result always reaches a human. */
 export async function assignPro(admin: SupabaseClient, motherId: string) {
   const { data: existing } = await admin.from("pro_patients").select("pro_id").eq("mother_id", motherId).limit(1);
   if (existing?.length) return existing[0].pro_id as string;
+  // continuity of care: a new mother goes to the least busy psychologist who is on duty and below their limit (or the on-call backup)
+  try {
+    const owner = ownerOf(await loadContext(admin, [motherId]), motherId, "MOOD");
+    if (owner.proId) { await admin.from("pro_patients").upsert({ pro_id: owner.proId, mother_id: motherId }); return owner.proId; }
+  } catch { /* routing columns not added yet: use the simple rule below */ }
   const { data: pros } = await admin.from("pros").select("id, title").eq("accepting", true).in("title", ["Clinical psychologist", "Counsellor"]);
   if (!pros?.length) return null;
   const { data: counts } = await admin.from("pro_patients").select("pro_id");

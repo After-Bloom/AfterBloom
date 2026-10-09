@@ -1,4 +1,4 @@
-import { MessageCircleQuestion, Activity, Baby, BarChart3, BookHeart, CalendarCheck, FileText, HeartHandshake, Lock, MessageCircleHeart, ShieldCheck, Settings2, Stethoscope, Users, Video, Brain, Home, ShieldPlus } from "lucide-react";
+import { Bell, ClipboardList, CalendarClock, MessageCircleQuestion, Activity, Baby, BarChart3, BookHeart, CalendarCheck, FileText, HeartHandshake, Lock, MessageCircleHeart, ShieldCheck, Settings2, Stethoscope, Users, Video, Brain, Home, ShieldPlus } from "lucide-react";
 import type { Role } from "./store";
 
 export type Feature = { href: string; key: string; title: string; desc: string; icon: any; tag?: "MVP" | "Stretch"; roles: Role[] };
@@ -14,7 +14,11 @@ export const FEATURES: Feature[] = [
   { href: "/report", key: "report", title: "Weekly report", desc: "Your week, and a one-page summary for your doctor.", icon: FileText, roles: ["mother"] },
   { href: "/privacy", key: "privacy", title: "Privacy & safety", desc: "PIN lock, quick exit, consent controls.", icon: Lock, roles: ["mother", "family", "pro", "moderator", "asha", "admin"] },
   { href: "/family-view", key: "fview", title: "Family home", desc: "Learn, help, share night feeds.", icon: BookHeart, roles: ["family"] },
-  { href: "/pro", key: "pro", title: "Professional dashboard", desc: "Patients by urgency, callbacks, sessions.", icon: Activity, roles: ["pro"] },
+  { href: "/pro", key: "pro", title: "Dashboard", desc: "Who needs you today.", icon: Activity, roles: ["pro"] },
+  { href: "/pro/patients", key: "pro-patients", title: "Patients", desc: "One tab per patient: her alerts, record and trends.", icon: Users, roles: ["pro"] },
+  { href: "/pro/alerts", key: "pro-alerts", title: "Alerts", desc: "Callbacks and related alerts.", icon: Bell, roles: ["pro"] },
+  { href: "/pro/sessions", key: "pro-sessions", title: "Sessions", desc: "Your booked video sessions.", icon: CalendarClock, roles: ["pro"] },
+  { href: "/pro/audit", key: "pro-audit", title: "Audit log", desc: "Every record you opened.", icon: ClipboardList, roles: ["pro"] },
   { href: "/asha", key: "asha", title: "ASHA dashboard", desc: "Mothers in your area sorted by risk.", icon: Users, tag: "Stretch", roles: ["asha"] },
   { href: "/moderate", key: "moderate", title: "Circle moderation", desc: "Flagged messages and community safety.", icon: ShieldCheck, roles: ["moderator", "admin"] },
   { href: "/admin", key: "admin", title: "Admin", desc: "People, clinical settings, partner report.", icon: Settings2, roles: ["admin"] },

@@ -1,0 +1,47 @@
+// A tiny in-memory stand-in for the Supabase client, just big enough for recordSignal(): select / insert / update with eq, gte, lte,
+// order, limit, single and maybeSingle, plus the unique index on signals (origin_table, origin_id, code).
+type Row = Record<string, any>;
+type Filter = (r: Row) => boolean;
+
+export function fakeDb(seed: Record<string, Row[]> = {}, opts: { failTables?: string[] } = {}) {
+  const tables: Record<string, Row[]> = { signals: [], ...seed };
+  let n = 0;
+  const from = (name: string) => {
+    let filters: Filter[] = [], op: "select" | "insert" | "update" = "select", payload: Row = {}, order: { col: string; asc: boolean } | null = null, max = Infinity, mode: "many" | "single" | "maybe" = "many";
+    const q: any = {
+      select: () => q,
+      insert: (row: Row) => { op = "insert"; payload = row; return q; },
+      update: (row: Row) => { op = "update"; payload = row; return q; },
+      eq: (c: string, v: any) => { filters.push((r) => r[c] === v); return q; },
+      gte: (c: string, v: any) => { filters.push((r) => r[c] >= v); return q; },
+      lte: (c: string, v: any) => { filters.push((r) => r[c] <= v); return q; },
+      order: (c: string, o?: { ascending?: boolean }) => { order = { col: c, asc: o?.ascending !== false }; return q; },
+      limit: (x: number) => { max = x; return q; },
+      single: () => { mode = "single"; return q; },
+      maybeSingle: () => { mode = "maybe"; return q; },
+      then: (ok: any, bad: any) => Promise.resolve(run()).then(ok, bad),
+    };
+    const run = () => {
+      if (opts.failTables?.includes(name)) return { data: null, error: { message: `relation "${name}" does not exist`, code: "42P01" } };
+      const rows = (tables[name] ??= []);
+      let out: Row[];
+      if (op === "insert") {
+        if (name === "signals" && rows.some((r) => r.origin_table === payload.origin_table && r.origin_id === payload.origin_id && r.code === payload.code))
+          return { data: null, error: { message: "duplicate key value violates unique constraint", code: "23505" } };
+        const row = { id: payload.id ?? `row${++n}`, created_at: new Date().toISOString(), case_id: null, ...payload };
+        rows.push(row);
+        out = [row];
+      } else if (op === "update") {
+        out = rows.filter((r) => filters.every((f) => f(r)));
+        out.forEach((r) => Object.assign(r, payload));
+      } else out = rows.filter((r) => filters.every((f) => f(r)));
+      if (order) out = [...out].sort((a, b) => (a[order!.col] < b[order!.col] ? -1 : a[order!.col] > b[order!.col] ? 1 : 0) * (order!.asc ? 1 : -1));
+      out = out.slice(0, max).map((r) => ({ ...r }));
+      if (mode === "many") return { data: out, error: null };
+      if (mode === "single") return out.length ? { data: out[0], error: null } : { data: null, error: { message: "no rows", code: "PGRST116" } };
+      return { data: out[0] ?? null, error: null };
+    };
+    return q;
+  };
+  return { client: { from } as any, tables };
+}

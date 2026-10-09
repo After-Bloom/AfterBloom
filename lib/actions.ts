@@ -8,6 +8,10 @@ import type { Level } from "./symptoms";
 import type { Risk } from "./risk";
 import type { LogKind } from "./babylog";
 
+/** The saved row an alert came from (a symptom log or a check-in). The server reads it back to work out the alert's signals. */
+export type Origin = { table: "symptom_logs" | "checkins"; id: string };
+const syncSignals = (o: Origin | null) => { if (o) void fetch("/api/signals/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(o), keepalive: true }).catch(() => {}); };
+
 /**
  * Everything the app saves goes through here: update the screen at once, then write to the database.
  * Row Level Security decides what is actually allowed, so a bug here cannot expose anyone's records.
@@ -24,29 +28,44 @@ export function useActions() {
     const fail = (what: string, e: any) => { console.error(what, e?.message ?? e); throw new Error(what); };
 
     return {
-      async saveCheckin(rec: Checkin, reasons: string[] = []) {
+      async saveCheckin(rec: Checkin, reasons: string[] = []): Promise<Origin | null> {
         set((p) => ({ ...p, checkins: [...p.checkins.filter((c) => dayStr(c.date) !== dayStr(rec.date)), rec] }));
-        if (!uid || !isMother) return;
-        const { error } = await sb.from("checkins").upsert({
+        if (!uid || !isMother) return null;
+        const { data, error } = await sb.from("checkins").upsert({
           mother_id: uid, day: dayStr(rec.date), mood: rec.mood, appetite: rec.appetite, sleep_hours: rec.sleepHours, level: rec.level,
           bp_sys: rec.bp?.sys ?? null, bp_dia: rec.bp?.dia ?? null, reasons,
-        }, { onConflict: "mother_id,day" });
+        }, { onConflict: "mother_id,day" }).select("id").single();
         if (error) fail("Could not save your check-in", error);
-        if (rec.level !== "GREEN") void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level: rec.level, reason: reasons.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
+        const origin: Origin | null = data?.id ? { table: "checkins", id: data.id } : null;
+        if (rec.level !== "GREEN") {
+          void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level: rec.level, reason: reasons.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
+          syncSignals(origin); // every alert is also saved as a signal, so related alerts can be grouped
+        }
+        return origin;
       },
 
-      async logSymptom(level: Level, labels: string[]) {
+      async logSymptom(level: Level, labels: string[]): Promise<Origin | null> {
         set((p) => ({ ...p, symptomLogs: [{ date: new Date().toISOString(), text: "", level, labels }, ...p.symptomLogs] }));
-        if (!uid || !isMother) return;
-        await sb.from("symptom_logs").insert({ mother_id: uid, level, labels }); // only labels and the level are stored, never what she typed
-        if (level !== "GREEN") void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level, reason: labels.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
+        if (!uid || !isMother) return null;
+        const { data } = await sb.from("symptom_logs").insert({ mother_id: uid, level, labels }).select("id").single(); // only labels and the level are stored, never what she typed
+        const origin: Origin | null = data?.id ? { table: "symptom_logs", id: data.id } : null;
+        if (level !== "GREEN") {
+          void fetch("/api/loop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "start", level, reason: labels.join(", ") }), keepalive: true }).catch(() => {}); // the care loop: follow up later
+          syncSignals(origin);
+        }
+        return origin;
       },
 
-      /** After a RED result: flag, alert her professional, alert family if she agreed. The crisis screen never waits for this. */
-      async reportEmergency(kind: CrisisKind, reason: string) {
+      /**
+       * After a RED result: flag, alert her professional, alert family if she agreed. The crisis screen never waits for this.
+       * `saved` is the symptom log or check-in this came from, so the server can group it with her other alerts before deciding who to tell.
+       */
+      async reportEmergency(kind: CrisisKind, reason: string, saved?: Promise<Origin | null>) {
         if (!uid || !isMother) return;
         try {
-          const res = await fetch("/api/alerts/emergency", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, reason }), keepalive: true });
+          // wait a moment for the saved row, but never hold up an emergency for it
+          const origin = saved ? await Promise.race([saved.catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 3000))]) : null;
+          const res = await fetch("/api/alerts/emergency", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, reason, origin }), keepalive: true });
           if (!res.ok) return;
           const { flag } = await res.json();
           if (flag) set((p) => ({ ...p, flags: [mapFlag(flag), ...p.flags.filter((f) => f.id !== flag.id)] }));

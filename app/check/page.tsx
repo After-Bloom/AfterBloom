@@ -45,11 +45,12 @@ export default function Check() {
 
   useEffect(() => () => rec.current?.stop?.(), []);
 
-  const log = (level: Level, labels: string[], _t: string) => { void act.logSymptom(level, labels); };
+  // saving the result also gives back the saved row, so the server can group this alert with her others before deciding who to tell
+  const log = (level: Level, labels: string[], _t: string) => act.logSymptom(level, labels).catch(() => null);
 
   // The crisis screen opens at once from the phone. Alerting her professional and (if she agreed) her family happens in the background.
-  const raiseRed = (reason: string, kind: CrisisKind) => {
-    void act.reportEmergency(kind, reason);
+  const raiseRed = (reason: string, kind: CrisisKind, saved?: ReturnType<typeof log>) => {
+    void act.reportEmergency(kind, reason, saved);
     openCrisis({ kind, reason });
   };
 
@@ -63,11 +64,11 @@ export default function Check() {
 
   const finalize = (picked: Symptom[], items: FuItem[], answers: number[], t: string, source: "device" | "cloud") => {
     const r = resolveCase(picked, items, answers);
-    log(r.level, r.symptoms.map((x) => x.label), t);
+    const saved = log(r.level, r.symptoms.map((x) => x.label), t);
     setView({ k: "done", res: { level: r.level, symptoms: r.symptoms, reasons: r.reasons, source } });
     if (r.level === "RED") {
       const why = [...r.symptoms.filter((x) => x.level === "RED").map((x) => x.label), ...r.reasons].join(", ") || "Danger sign";
-      raiseRed(why, r.crisis ?? (r.symptoms.some((x) => x.id === "self_harm") ? "selfharm" : "medical"));
+      raiseRed(why, r.crisis ?? (r.symptoms.some((x) => x.id === "self_harm") ? "selfharm" : "medical"), saved);
     }
   };
 
@@ -81,7 +82,7 @@ export default function Check() {
     setBusy(true);
     const out = await findSymptoms(t, who, cloudOk);
     setBusy(false);
-    if (out.safety === "selfharm") { log("RED", ["Thoughts of self-harm"], t); raiseRed("Thoughts of self-harm", "selfharm"); }
+    if (out.safety === "selfharm") { const saved = log("RED", ["Thoughts of self-harm"], t); raiseRed("Thoughts of self-harm", "selfharm", saved); }
     if (out.auto.length) return startAsk(out.auto, t, out.source);
     if (out.maybe.length) return setView({ k: "pick", options: out.maybe, text: t, source: out.source });
     setView({ k: "none" });
@@ -93,9 +94,9 @@ export default function Check() {
     const flag = redFlagCheck(t); // 1. emergency check first, on the phone, before anything else
     if (flag) {
       if (flag.negated && flag.kind !== "selfharm") return setView({ k: "confirm", reason: flag.reason, kind: flag.kind, text: t });
-      log("RED", [flag.reason], t);
+      const saved = log("RED", [flag.reason], t);
       setView({ k: "done", res: { level: "RED", symptoms: [], reasons: [flag.reason], source: "device" } });
-      return raiseRed(flag.reason, flag.kind);
+      return raiseRed(flag.reason, flag.kind, saved);
     }
     await runMatch(t);
   };

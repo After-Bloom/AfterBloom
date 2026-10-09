@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminClient, currentUser, userClient } from "@/lib/supabase/server";
+import { loadPros } from "@/lib/server/routingCore";
 
 // Admin overview: people (no health data), anonymised hospital totals, and the clinical settings with their sign-off.
 export const runtime = "nodejs";
@@ -15,10 +16,12 @@ export async function GET() {
     userClient().rpc("hospital_stats"),
     admin.from("clinical_config").select("key, value, version, signed_off_by, signed_off_at, updated_at"),
   ]);
+  const loads = await loadPros(admin); // who is on duty and how full each professional is (continuity of care routes by this)
   const emails = new Map((authList?.users ?? []).map((u) => [u.id, u.email ?? ""]));
   return NextResponse.json({
     people: (profiles ?? []).map((p) => ({ ...p, email: emails.get(p.id) ?? "" })),
     hospitals: stats.data ?? [],
     config: cfg ?? [],
+    loads,
   });
 }

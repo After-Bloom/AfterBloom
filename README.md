@@ -126,7 +126,9 @@ node --test tests/epds.test.ts tests/risk.test.ts  # automated tests
 
 ## Deployment link
 
-*(To be added.)*
+**Live site:** https://after-bloom.vercel.app
+
+You can try it without signing up: open the sign-in page and use the "Try the demo" buttons (mother, family member, professional, ASHA worker, moderator, admin).
 
 ---
 

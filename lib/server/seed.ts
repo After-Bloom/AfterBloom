@@ -2,7 +2,10 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DEMO_HOSPITAL, DEMO_MOTHERS, DEMO_POSTS, DEMO_PROS, DEMO_STAFF } from "../mock";
 import { encrypt } from "./crypto";
-import { assignCircle } from "./onboard";
+import { assignCircle, assignPro } from "./onboard";
+import { loadContext, ownerOf } from "./routingCore";
+import { recordAll, recordSignal, symptomLookup } from "./signals";
+import { deriveFromEpds, deriveFromSymptomLog, derivePartnerScreen } from "../signals/derive";
 
 const DAY = 86400000;
 // every write is checked: a seed that silently half-works is worse than one that stops with a clear message
@@ -54,7 +57,10 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
     const id = await user(admin, p.email, p.name, "pro", password);
     proIds[p.key] = id;
     await must("profiles upsert", admin.from("profiles").upsert({ id, role: "pro", full_name: p.name, lang: "en", city: "Delhi", hospital_id: DEMO_HOSPITAL, is_demo: true }));
-    await must("pros upsert", admin.from("pros").upsert({ id, title: p.title, qualification: p.qualification, reg_no: p.reg_no, langs: p.langs, fee: p.fee, bio: p.bio, is_sample: true, accepting: true }));
+    const base = { id, title: p.title, qualification: p.qualification, reg_no: p.reg_no, langs: p.langs, fee: p.fee, bio: p.bio, is_sample: true, accepting: true };
+    const routing = { specialty: p.specialty, on_duty: p.onDuty !== false, max_open_cases: p.maxOpen ?? 5, is_on_call: !!p.onCall };
+    const withRouting = await admin.from("pros").upsert({ ...base, ...routing });
+    if (withRouting.error) await must("pros upsert", admin.from("pros").upsert(base)); // migration 010 not run yet: seed without the routing columns
   }
   log.push(`${DEMO_PROS.length} sample professionals`);
 
@@ -78,19 +84,22 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
       emergency_contact_name: m.family ? "Rohan (husband)" : null, emergency_contact_phone: m.family ? "+91 98000 00000" : null,
       consent_share_pro: true, consent_emergency_alert: !!m.emergencyAlert, consent_family_note: false, phone: `+91 98${String(10000 + DEMO_MOTHERS.indexOf(m) * 1111).padStart(5, "0")}00`, baby_sex: DEMO_MOTHERS.indexOf(m) % 2 ? "boy" : "girl",
     }));
-    await must("pro_patients upsert", admin.from("pro_patients").upsert({ pro_id: proIds.drrao, mother_id: id }));
+    await admin.from("pro_patients").delete().eq("mother_id", id);
+    if (!m.routed) await must("pro_patients upsert", admin.from("pro_patients").upsert({ pro_id: proIds.drrao, mother_id: id })); // the others are matched by the routing rules below
+    if (m.risk) await admin.from("mothers").update({ risk: m.risk }).eq("id", id);
     await must("asha_assignments upsert", admin.from("asha_assignments").upsert({ asha_id: staff.asha, mother_id: id }));
 
     // clear then write history so re-seeding is clean
-    await Promise.all(["checkins", "epds_results", "flags", "baby_vaccines", "baby_growth", "symptom_logs"].map((t) => admin.from(t).delete().eq("mother_id", id)));
+    await Promise.all(["signals", "checkins", "epds_results", "flags", "baby_vaccines", "baby_growth", "symptom_logs", "partner_screens"].map((t) => admin.from(t).delete().eq("mother_id", id)));
     const n = m.mood.length;
     await must("checkins insert", admin.from("checkins").insert(m.mood.map((mood, i) => ({
       mother_id: id, day: isoDay(daysAgo(n - i)), mood, appetite: m.appetite?.[i] ?? Math.min(5, Math.max(1, mood + (i % 3 === 0 ? -1 : 0))), sleep_hours: m.sleep[i], level: "GREEN",
-      bp_sys: m.bp && i === n - 1 ? m.bp.sys : null, bp_dia: m.bp && i === n - 1 ? m.bp.dia : null,
+      bp_sys: m.bpSeries ? m.bpSeries[i].sys : m.bp && i === n - 1 ? m.bp.sys : null, bp_dia: m.bpSeries ? m.bpSeries[i].dia : m.bp && i === n - 1 ? m.bp.dia : null,
     }))));
     for (const e of m.epds) {
       const band = e.score >= 13 ? "probable" : e.score >= 10 ? "possible" : "low";
-      await must("epds_results insert", admin.from("epds_results").insert({ mother_id: id, total: e.score, band, self_harm: false, answers_enc: encrypt(JSON.stringify(answersFor(e.score, false))), created_at: daysAgo(e.daysAgo).toISOString() }));
+      const { data: er } = await must("epds_results insert", admin.from("epds_results").insert({ mother_id: id, total: e.score, band, self_harm: false, answers_enc: encrypt(JSON.stringify(answersFor(e.score, false))), created_at: daysAgo(e.daysAgo).toISOString() }).select("id, created_at").single());
+      if (er) await recordAll(admin, deriveFromEpds(id, { id: er.id, total: e.score, band, self_harm: false, created_at: er.created_at })); // every screening is also a signal, in the order it happened
     }
     if (m.flagAgoH) {
       const created = new Date(Date.now() - m.flagAgoH * 3600000);
@@ -100,6 +109,57 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
     await must("baby_growth insert", admin.from("baby_growth").insert({ mother_id: id, on_date: birth, weight_kg: 3.1, length_cm: 50 }));
   }
   log.push(`${DEMO_MOTHERS.length} sample mothers with history`);
+
+  // ---- continuity of care ----
+  // Mothers without a doctor yet are matched by the routing rules: on duty, below their limit, least busy, else the on-call backup.
+  // Dr Rao is at capacity (Anita's open callback), so Kavya, a new mother with a mood concern, goes to Dr Sen.
+  const ctx = await loadContext(admin, []);
+  for (const m of DEMO_MOTHERS.filter((x) => x.routed)) {
+    const owner = ownerOf(ctx, mothers[m.key], m.key === "anjali" ? "INFECTION" : "MOOD");
+    if (owner.proId) await admin.from("pro_patients").upsert({ pro_id: owner.proId, mother_id: mothers[m.key] });
+    await assignPro(admin, mothers[m.key]); // everyone also has a psychologist, so a mood screening always reaches a human
+  }
+  // Priya is a returning patient: two sessions with Dr Rao and one with Dr Mehta, so "Your doctors" has someone to offer
+  const priya = mothers.priya;
+  await admin.from("pro_patients").upsert({ pro_id: proIds.mehta, mother_id: priya });
+  await admin.from("bookings").delete().eq("mother_id", priya).eq("status", "done");
+  await admin.from("bookings").insert([
+    { mother_id: priya, pro_id: proIds.drrao, starts_at: new Date(Date.now() - 11 * DAY).toISOString(), status: "done" },
+    { mother_id: priya, pro_id: proIds.drrao, starts_at: new Date(Date.now() - 5 * DAY).toISOString(), status: "done" },
+    { mother_id: priya, pro_id: proIds.mehta, starts_at: new Date(Date.now() - 7 * DAY).toISOString(), status: "done" },
+  ]);
+  await admin.from("care_preferences").delete().eq("mother_id", priya);
+  await admin.from("care_preferences").insert([{ mother_id: priya, specialty: "psychologist", pro_id: proIds.drrao, set_by: "booking" }, { mother_id: priya, specialty: "gynaecologist", pro_id: proIds.mehta, set_by: "booking" }]);
+  log.push("continuity of care: Priya has seen Dr Rao (2 sessions) and Dr Mehta (1); Kavya and Anjali were matched by the routing rules");
+
+  // ---- the related-alerts story, run through the real linking rules ----
+  // Every time is relative to now, so it looks the same whenever a judge opens it. Nothing is hand-labelled: each alert is recorded by
+  // recordSignal(), so the "repeat", "follow-up", "also reported" and "possibly related" labels on screen come from the real rules.
+  const ago = (h: number) => new Date(Date.now() - h * 3600000).toISOString();
+  const rec = (h: number, source: "checkin" | "symptom_checker", code: string, concern: "HYPERTENSIVE", severity: "amber" | "red", value: Record<string, number> | null = null) =>
+    recordSignal(admin, { motherId: priya, subject: "mother", source, code, concern, severity, value, observedAt: ago(h), originTable: "checkins", originId: crypto.randomUUID() });
+  const saveLog = async (mother: string, h: number, level: "RED" | "AMBER", labels: string[]) => {
+    const { data } = await admin.from("symptom_logs").insert({ mother_id: mother, level, labels, created_at: ago(h) }).select("id, level, labels, created_at").single();
+    if (data) await recordAll(admin, deriveFromSymptomLog(mother, data as any, symptomLookup));
+  };
+
+  // partner screening by Rohan (30 hours ago): joins her mood concern
+  const { data: ps } = await admin.from("partner_screens").insert({ mother_id: priya, by_user: staff.rohan, yes_count: 4, answers: [1, 1, 1, 1, 0, 0], created_at: ago(30) }).select("id, created_at").single();
+  if (ps) await recordAll(admin, derivePartnerScreen(priya, { id: ps.id, yes: 4, total: 6, created_at: ps.created_at }));
+
+  await rec(26, "checkin", "bp_raised", "HYPERTENSIVE", "amber", { sys: 142, dia: 90 });                 // morning reading, no headache: opens the blood pressure concern
+  const red = await rec(13, "checkin", "bp_raised", "HYPERTENSIVE", "red", { sys: 148, dia: 94 });        // evening, now with a headache: amber to red, so it tells the care team again
+  await rec(13, "checkin", "headache", "HYPERTENSIVE", "amber");
+  await saveLog(priya, 12.6, "RED", ["Severe headache with blurred vision", "Headache"]);                 // reported again in the symptom checker: also reported, held back
+  await saveLog(priya, 12.2, "AMBER", ["Dizzy or faint when standing"]);                                  // dizziness (bleeding) with raised BP: possibly related, a clinician confirms
+  await recordSignal(admin, { motherId: priya, subject: "mother", source: "care_loop", code: "loop_no_reply", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(8), originTable: "care_loops", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true }); // no reply to "did you get care?"
+  await rec(2, "checkin", "bp_raised", "HYPERTENSIVE", "red", { sys: 152, dia: 96 });                       // raised again: a repeat
+  await recordSignal(admin, { motherId: priya, subject: "mother", source: "callback", code: "callback_overdue", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(1), originTable: "flags", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true });
+  await saveLog(priya, 5, "AMBER", ["Yellowish skin or eyes"]);                                            // the baby: a separate concern
+
+  // Anjali (day 5): fever with a painful red breast, one infection concern with two signs
+  await saveLog(mothers.anjali, 3, "AMBER", ["Fever", "Painful red breast"]);
+  log.push("Priya: her alerts from the last two days were run through the real linking rules (repeat, follow-up, also reported, possibly related, a separate baby concern)");
 
   // ---- Priya's family: Rohan ----
   await admin.from("family_members").delete().eq("mother_id", mothers.priya);

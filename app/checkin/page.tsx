@@ -99,10 +99,10 @@ export default function Checkin() {
     const rec = { date: new Date().toISOString(), mood, appetite, sleepHours: sleep, level: r.level, bp };
     setOut(r); setShown(true); setBloom(before / 7); setDir(1); setStep(STEPS);
     setSaveErr(false);
-    act.saveCheckin(rec, r.reasons).catch(() => setSaveErr(true));
+    const saved = act.saveCheckin(rec, r.reasons).catch(() => { setSaveErr(true); return null; });
     setTimeout(() => setBloom(Math.min(7, doneToday ? before : before + 1) / 7), 500);
     if (r.level === "RED") {
-      void act.reportEmergency("medical" as any, r.reasons.join(", "));
+      void act.reportEmergency("medical" as any, r.reasons.join(", "), saved);
       openCrisis({ kind: "medical", reason: r.reasons.join(", ") });
     }
   };

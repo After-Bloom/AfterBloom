@@ -3,6 +3,8 @@ import { adminClient, currentUser, userClient } from "@/lib/supabase/server";
 import { ADVICE_NOTE, TOPICS, hasSelfHarmLanguage, looksLikeMedicalAdvice } from "@/lib/safety";
 import { notify } from "@/lib/server/notify";
 import { limited } from "@/lib/server/limit";
+import { recordSignal } from "@/lib/server/signals";
+import { deriveCirclePost } from "@/lib/signals/derive";
 
 // Posting to a Bloom Circle. Every message is checked on the server:
 //  - self-harm or crisis language -> queued for a human moderator (the software never replies on its own); the writer sees the crisis screen
@@ -33,6 +35,7 @@ export async function POST(req: Request) {
   if (flagged) {
     const admin = adminClient();
     await admin.from("mod_queue").insert({ post_id: post.id, circle_id: mother.circle_id, reason: "Self-harm or crisis language" });
+    await recordSignal(admin, deriveCirclePost(user.id, post.id, new Date().toISOString())); // a safety signal on her record (only the code, never her words)
     const { data: staff } = await admin.from("profiles").select("id").in("role", ["moderator", "admin"]);
     await Promise.all((staff ?? []).map((s) => notify(admin, s.id, { kind: "support", title: "Circle moderation", body: "A message needs a human look.", url: "/moderate" })));
   }

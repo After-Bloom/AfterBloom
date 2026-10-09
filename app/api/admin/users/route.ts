@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
 
 const STAFF = ["pro", "moderator", "asha", "admin"];
 const TITLES = ["Clinical psychologist", "Counsellor", "Psychiatrist", "Gynaecologist", "Lactation consultant", "Paediatrician"];
+// which kind of alert each profession handles (continuity of care routes by this)
+const SPECIALTY: Record<string, string> = { "Clinical psychologist": "psychologist", Counsellor: "psychologist", Psychiatrist: "psychologist", Gynaecologist: "gynaecologist", "Lactation consultant": "lactation", Paediatrician: "paediatrician" };
 
 export async function POST(req: Request) {
   const user = await currentUser();
@@ -24,10 +26,13 @@ export async function POST(req: Request) {
   const { error: pe } = await admin.from("profiles").insert({ id, role, full_name: name, lang: "en", city: b?.city ?? null, hospital_id: "00000000-0000-0000-0000-0000000000a1" });
   if (pe) { await admin.auth.admin.deleteUser(id); return NextResponse.json({ error: "Could not set up the profile." }, { status: 500 }); }
   if (role === "pro") {
-    await admin.from("pros").insert({
-      id, title: TITLES.includes(b.title) ? b.title : "Counsellor", qualification: String(b.qualification ?? "").slice(0, 200), reg_no: String(b.reg_no).trim().slice(0, 80),
+    const title = TITLES.includes(b.title) ? b.title : "Counsellor";
+    const row = {
+      id, title, qualification: String(b.qualification ?? "").slice(0, 200), reg_no: String(b.reg_no).trim().slice(0, 80),
       langs: Array.isArray(b.langs) ? b.langs.slice(0, 8) : ["English"], fee: Math.max(0, Math.min(10000, Number(b.fee) || 0)), bio: String(b.bio ?? "").slice(0, 300), is_sample: false, accepting: true,
-    });
+    };
+    const { error: ie } = await admin.from("pros").insert({ ...row, specialty: SPECIALTY[title] });
+    if (ie) await admin.from("pros").insert(row); // the specialty column is added by migration 010; until then create the professional as before
   }
   // The temporary password is shown once. The person should change it after signing in.
   return NextResponse.json({ ok: true, id, tempPassword: password });

@@ -5,7 +5,7 @@ Two SQL files, run **in order**, in Supabase: *SQL Editor → New query → past
 1. `migrations/001_schema.sql`: tables, indexes and defaults
 2. `migrations/002_security.sql`: Row Level Security, helper functions, RPCs, realtime
 
-Both are safe to run again. Later changes ship as `003_...`, `004_...` and so on.
+Both are safe to run again. Later changes ship as `003_...`, `004_...` and so on. `007_signals.sql` (related alerts) and `010_routing.sql` (continuity of care) are additive: they only add tables and columns, and the app keeps working if they have not been run yet.
 
 ## What protects the data
 - Every table has Row Level Security. A signed-out visitor can read nothing.
