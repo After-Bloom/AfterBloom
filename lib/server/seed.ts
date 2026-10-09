@@ -90,12 +90,12 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
     await must("asha_assignments upsert", admin.from("asha_assignments").upsert({ asha_id: staff.asha, mother_id: id }));
 
     // clear then write history so re-seeding is clean
-    await Promise.all(["signals", "checkins", "epds_results", "flags", "baby_vaccines", "baby_growth", "symptom_logs", "partner_screens"].map((t) => admin.from(t).delete().eq("mother_id", id)));
+    await Promise.all(["cases", "signals", "checkins", "epds_results", "flags", "baby_vaccines", "baby_growth", "symptom_logs", "partner_screens"].map((t) => admin.from(t).delete().eq("mother_id", id)));
     const n = m.mood.length;
-    await must("checkins insert", admin.from("checkins").insert(m.mood.map((mood, i) => ({
+    await must("checkins insert", admin.from("checkins").upsert(m.mood.map((mood, i) => ({
       mother_id: id, day: isoDay(daysAgo(n - i)), mood, appetite: m.appetite?.[i] ?? Math.min(5, Math.max(1, mood + (i % 3 === 0 ? -1 : 0))), sleep_hours: m.sleep[i], level: "GREEN",
       bp_sys: m.bpSeries ? m.bpSeries[i].sys : m.bp && i === n - 1 ? m.bp.sys : null, bp_dia: m.bpSeries ? m.bpSeries[i].dia : m.bp && i === n - 1 ? m.bp.dia : null,
-    }))));
+    })), { onConflict: "mother_id,day" }));
     for (const e of m.epds) {
       const band = e.score >= 13 ? "probable" : e.score >= 10 ? "possible" : "low";
       const { data: er } = await must("epds_results insert", admin.from("epds_results").insert({ mother_id: id, total: e.score, band, self_harm: false, answers_enc: encrypt(JSON.stringify(answersFor(e.score, false))), created_at: daysAgo(e.daysAgo).toISOString() }).select("id, created_at").single());
@@ -152,7 +152,7 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
   await rec(13, "checkin", "headache", "HYPERTENSIVE", "amber");
   await saveLog(priya, 12.6, "RED", ["Severe headache with blurred vision", "Headache"]);                 // reported again in the symptom checker: also reported, held back
   await saveLog(priya, 12.2, "AMBER", ["Dizzy or faint when standing"]);                                  // dizziness (bleeding) with raised BP: possibly related, a clinician confirms
-  await recordSignal(admin, { motherId: priya, subject: "mother", source: "care_loop", code: "loop_no_reply", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(8), originTable: "care_loops", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true }); // no reply to "did you get care?"
+  await recordSignal(admin, { motherId: priya, subject: "mother", source: "care_loop", code: "loop_no_reply", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(8), originTable: "care_loops", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true, value: { askedAt: ago(10) } }); // no reply to "did you get care?"
   await rec(2, "checkin", "bp_raised", "HYPERTENSIVE", "red", { sys: 152, dia: 96 });                       // raised again: a repeat
   await recordSignal(admin, { motherId: priya, subject: "mother", source: "callback", code: "callback_overdue", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(1), originTable: "flags", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true });
   await saveLog(priya, 5, "AMBER", ["Yellowish skin or eyes"]);                                            // the baby: a separate concern

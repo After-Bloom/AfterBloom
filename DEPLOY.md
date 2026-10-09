@@ -1,7 +1,7 @@
 # Deploying AfterBloom (free tiers only)
 
 ## 1. Supabase
-Run these in the SQL editor, in order: `supabase/migrations/001_schema.sql`, `002_security.sql`, `003_features.sql`, `004_fixes.sql`, `005_care_loop.sql`, `006_depth.sql`, `007_signals.sql`, `010_routing.sql` (008 and 009 are reserved for the case and action layers that come next, so there is no gap to fill).
+Run these in the SQL editor, in order: `supabase/migrations/001_schema.sql`, `002_security.sql`, `003_features.sql`, `004_fixes.sql`, `005_care_loop.sql`, `006_depth.sql`, `007_signals.sql`, `008_cases.sql`, `010_routing.sql` (009 is reserved for the action layer that comes next, so there is no gap to fill).
 
 Optional extras (the app works without them):
 - **Text-message reminders:** set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM` (see `.env.example`). Mothers opt in under Privacy, and the daily job sends one neutral text to those who have not checked in.

@@ -10,6 +10,7 @@ import { stageText, weekData } from "@/lib/report";
 import { Sparkle } from "@/components/fx";
 import { BloomProgress } from "@/components/BloomProgress";
 import { CareLoopCard } from "@/components/CareLoopCard";
+import { CareTeamStatus } from "@/components/CareTeamStatus";
 import { BpWatch } from "@/components/BpWatch";
 import { RecoveryProfile } from "@/components/RecoveryProfile";
 
@@ -66,6 +67,7 @@ export default function Home() {
 
       <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr] lg:gap-6">
         <div className="space-y-5">
+          <CareTeamStatus />
           <CareLoopCard />
           <BpWatch />
           <RecoveryProfile />

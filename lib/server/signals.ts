@@ -1,10 +1,12 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SYMPTOMS } from "../symptoms";
-import { mapSignal, recordAll, recordSignal, shouldNotify, type Recorded } from "../signals/record";
+import { mapSignal, recordAll as recordAllCore, recordSignal as recordSignalCore, shouldNotify, type Hooks, type Recorded } from "../signals/record";
+import { attachSignal, raiseSignal, type OwnerFn } from "../cases/attach";
+import { loadContext, ownerOf } from "./routingCore";
 import { visibleSignals } from "../signals/access";
 import { deriveFromCheckin, deriveFromEpds, deriveFromSymptomLog, loopSignal, type SymptomLookup } from "../signals/derive";
-import type { Concern, Severity, Signal } from "../types/cases";
+import type { Concern, Severity, Signal, SignalInput } from "../types/cases";
 
 // Recording signals. Every producer (symptom checker, check-in, EPDS, care loop, callbacks, circle posts) calls recordSignal() next to
 // the flag or alert it already creates. It NEVER throws and never blocks the producer: if signals cannot be saved (for example the
@@ -13,7 +15,24 @@ import type { Concern, Severity, Signal } from "../types/cases";
 const BY_LABEL = new Map(SYMPTOMS.map((s) => [s.label, { id: s.id, who: s.who, level: s.level }]));
 export const symptomLookup: SymptomLookup = (label) => BY_LABEL.get(label);
 
-export { mapSignal, recordAll, recordSignal, shouldNotify };
+/**
+ * Who a new case is routed to when it opens: the professional she already knows for that concern, else the least busy colleague
+ * (continuity of care). The owner is matched with her, so they can see her record; what she shares is still decided by her consent.
+ */
+export const ownerFn = (admin: SupabaseClient): OwnerFn => async (motherId, concern) => {
+  const result = ownerOf(await loadContext(admin, [motherId]), motherId, concern);
+  if (result.proId) await admin.from("pro_patients").upsert({ pro_id: result.proId, mother_id: motherId });
+  return { proId: result.proId, result: result.proId ? result : null };
+};
+
+/** Every saved alert is also put into its case (opening or reopening one if needed). If the cases table is missing, the alert is still recorded. */
+const caseHooks = (admin: SupabaseClient): Hooks => ({
+  created: (s) => attachSignal(admin, s, ownerFn(admin)),
+  raised: (s) => raiseSignal(admin, s),
+});
+export const recordSignal = (admin: SupabaseClient, input: SignalInput) => recordSignalCore(admin, input, caseHooks(admin));
+export const recordAll = (admin: SupabaseClient, inputs: SignalInput[]) => recordAllCore(admin, inputs, caseHooks(admin));
+export { mapSignal, shouldNotify };
 export type { Recorded };
 
 // ---------- rows the app saved on her phone: read them back and turn them into signals ----------
@@ -51,13 +70,14 @@ export async function followUpParent(admin: SupabaseClient, motherId: string, cr
 }
 
 /** Record that she did not answer (or answered "worse" / "can't reach") as a follow-up of the alert that started the loop. */
-export async function recordLoopSignal(admin: SupabaseClient, loop: { id: string; mother_id: string; level: "RED" | "AMBER"; created_at: string }, status: "no_answer" | "worse" | "cant_reach") {
+export async function recordLoopSignal(admin: SupabaseClient, loop: { id: string; mother_id: string; level: "RED" | "AMBER"; created_at: string; check_at?: string }, status: "no_answer" | "worse" | "cant_reach") {
   const parent = await followUpParent(admin, loop.mother_id, loop.created_at);
   const { code, severity } = loopSignal(status, loop.level);
   const concern: Concern = parent?.concern ?? "GENERAL";
   const r = await recordSignal(admin, {
     motherId: loop.mother_id, subject: parent?.subject ?? "mother", source: "care_loop", code, concern, severity: severity as Severity,
     originTable: "care_loops", originId: loop.id, followUpOf: parent?.id ?? null,
+    value: loop.check_at ? { askedAt: loop.check_at } : null, // when she was asked, for "no reply since 10:10 pm"
     forceNotify: true, // a mother who has gone silent after a red or amber result must always reach a human; grouping never holds this back
   });
   return { ...r, concern };

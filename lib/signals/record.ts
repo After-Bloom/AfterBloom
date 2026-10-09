@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { classify } from "./correlate.ts";
 import { LOOKBACK_HOURS, SEVERITY_RANK } from "./config.ts";
-import type { Signal, SignalInput } from "../types/cases.ts";
+import type { Severity, Signal, SignalInput } from "../types/cases.ts";
+
+/** Called after a signal is saved, so the case layer can put it in a case. A hook that fails never stops the alert from being recorded. */
+export type Hooks = { created?: (s: Signal) => Promise<unknown>; raised?: (s: Signal, from: Severity) => Promise<unknown> };
 
 // Recording signals. Every producer (symptom checker, check-in, EPDS, care loop, callbacks, circle posts) calls recordSignal() next to
 // the flag or alert it already creates. It NEVER throws and never blocks the producer: if signals cannot be saved (for example the
@@ -28,7 +31,7 @@ async function loadHistory(admin: SupabaseClient, motherId: string, observedAt: 
   return list;
 }
 
-export async function recordSignal(admin: SupabaseClient, input: SignalInput): Promise<Recorded> {
+export async function recordSignal(admin: SupabaseClient, input: SignalInput, hooks?: Hooks): Promise<Recorded> {
   try {
     const observedAt = input.observedAt ?? new Date().toISOString();
     const find = async () => (await admin.from("signals").select("*").eq("origin_table", input.originTable).eq("origin_id", input.originId).eq("code", input.code).maybeSingle()).data;
@@ -40,7 +43,9 @@ export async function recordSignal(admin: SupabaseClient, input: SignalInput): P
       const rose = SEVERITY_RANK[input.severity] > SEVERITY_RANK[was.severity];
       if (!rose && input.value == null) return { signal: was, notify: was.notified, created: false };
       const { data } = await admin.from("signals").update({ severity: rose ? input.severity : was.severity, value: input.value ?? was.value, notified: was.notified || rose }).eq("id", was.id).select("*").single();
-      return { signal: data ? mapSignal(data) : was, notify: rose || was.notified, created: false };
+      const saved = data ? mapSignal(data) : was;
+      if (rose) await hooks?.raised?.(saved, was.severity).catch((e) => console.error("case hook failed", e?.message ?? e));
+      return { signal: saved, notify: rose || was.notified, created: false };
     }
 
     const history = await loadHistory(admin, input.motherId, observedAt, input.followUpOf);
@@ -56,16 +61,18 @@ export async function recordSignal(admin: SupabaseClient, input: SignalInput): P
       if ((error as any).code === "23505") { const won = await find(); if (won) return { signal: mapSignal(won), notify: (mapSignal(won)).notified, created: false }; }
       throw error;
     }
-    return { signal: mapSignal(data), notify: d.notify, created: true };
+    const saved = mapSignal(data);
+    await hooks?.created?.(saved).catch((e) => console.error("case hook failed", e?.message ?? e));
+    return { signal: saved, notify: d.notify, created: true };
   } catch (e: any) {
     console.error("recordSignal failed", e?.message ?? e);
     return { signal: null, notify: true, created: false };
   }
 }
 
-export async function recordAll(admin: SupabaseClient, inputs: SignalInput[]): Promise<Recorded[]> {
+export async function recordAll(admin: SupabaseClient, inputs: SignalInput[], hooks?: Hooks): Promise<Recorded[]> {
   const out: Recorded[] = [];
-  for (const i of inputs) out.push(await recordSignal(admin, i)); // one at a time, so the second alert in a batch sees the first
+  for (const i of inputs) out.push(await recordSignal(admin, i, hooks)); // one at a time, so the second alert in a batch sees the first
   return out;
 }
 

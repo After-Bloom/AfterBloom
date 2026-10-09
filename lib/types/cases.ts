@@ -95,10 +95,40 @@ export type RoutingResult = {
   note?: "preferred_off_duty";
 };
 
+// ---------- cases ----------
+export type CaseStatus = "open" | "monitoring" | "resolved";
+export type CaseEventType = "opened" | "reopened" | "severity_raised" | "link_confirmed" | "link_unlinked" | "resolved";
+
+/** One case per mother, subject and concern: every related alert attaches to it. */
+export type Case = {
+  id: string;
+  motherId: string;
+  subject: Subject;
+  concern: Concern;
+  title: string;
+  status: CaseStatus;
+  severityPeak: Severity;
+  severityCurrent: Severity;
+  priority: string | null;
+  dueBy: string | null;
+  ownerProId: string | null;
+  ownerReason: RoutingResult | null;
+  acknowledgedAt: string | null;
+  triggerSignalId: string | null;
+  openedAt: string;
+  lastSignalAt: string;
+  resolvedAt: string | null;
+  reopenedCount: number;
+};
+
+export type CaseEvent = { id: number; caseId: string; at: string; type: CaseEventType; actorRole: string | null; actorId: string | null; detail: Record<string, unknown> };
+
 /** What the professional's "related alerts" screen receives for one patient (consent already applied by the server). */
 export type PatientSignals = {
   id: string; name: string; day: number; shares: boolean;
   signals: Signal[];
+  /** the cases those alerts belong to (empty until migration 008 has been run) */
+  cases: Case[];
   /** who owns each concern she has (continuity of care) */
   owners: Partial<Record<Concern, RoutingResult>>;
 };

@@ -1,5 +1,5 @@
 // A tiny in-memory stand-in for the Supabase client, just big enough for recordSignal(): select / insert / update with eq, gte, lte,
-// order, limit, single and maybeSingle, plus the unique index on signals (origin_table, origin_id, code).
+// order, limit, single and maybeSingle, plus the unique index on signals (origin_table, origin_id, code) and the one-open-case index on cases.
 type Row = Record<string, any>;
 type Filter = (r: Row) => boolean;
 
@@ -15,6 +15,9 @@ export function fakeDb(seed: Record<string, Row[]> = {}, opts: { failTables?: st
       eq: (c: string, v: any) => { filters.push((r) => r[c] === v); return q; },
       gte: (c: string, v: any) => { filters.push((r) => r[c] >= v); return q; },
       lte: (c: string, v: any) => { filters.push((r) => r[c] <= v); return q; },
+      neq: (c: string, v: any) => { filters.push((r) => r[c] !== v); return q; },
+      in: (c: string, v: any[]) => { filters.push((r) => v.includes(r[c])); return q; },
+      is: (c: string, v: any) => { filters.push((r) => (v === null ? r[c] == null : r[c] === v)); return q; },
       order: (c: string, o?: { ascending?: boolean }) => { order = { col: c, asc: o?.ascending !== false }; return q; },
       limit: (x: number) => { max = x; return q; },
       single: () => { mode = "single"; return q; },
@@ -28,7 +31,9 @@ export function fakeDb(seed: Record<string, Row[]> = {}, opts: { failTables?: st
       if (op === "insert") {
         if (name === "signals" && rows.some((r) => r.origin_table === payload.origin_table && r.origin_id === payload.origin_id && r.code === payload.code))
           return { data: null, error: { message: "duplicate key value violates unique constraint", code: "23505" } };
-        const row = { id: payload.id ?? `row${++n}`, created_at: new Date().toISOString(), case_id: null, ...payload };
+        if (name === "cases" && payload.status !== "resolved" && rows.some((r) => r.status !== "resolved" && r.mother_id === payload.mother_id && r.subject === payload.subject && r.concern === payload.concern))
+          return { data: null, error: { message: "duplicate key value violates unique constraint one_open_case", code: "23505" } };
+        const row = { id: payload.id ?? `row${++n}`, created_at: new Date().toISOString(), case_id: null, reopened_count: 0, ...payload };
         rows.push(row);
         out = [row];
       } else if (op === "update") {

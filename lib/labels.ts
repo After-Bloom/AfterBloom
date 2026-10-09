@@ -1,6 +1,8 @@
 import type { Concern, RelationDetail, RoutingResult, Severity, Signal, SignalSource } from "./types/cases.ts";
 import { CONCERN_WINDOW_HOURS, CORROBORATE_HOURS, REPEAT_HOURS } from "./signals/config.ts";
 import { formatClock } from "./time.ts";
+import { CASE_TITLE } from "./cases/titles.ts";
+import type { CaseEvent, CaseStatus } from "./types/cases.ts";
 
 // Every word the grouping screens show lives here, in English with Hindi alongside. The code names (HYPERTENSIVE, DUPLICATE,
 // POSSIBLY_RELATED ...) never reach a screen. Hindi is a draft for a clinician and a native speaker to review.
@@ -158,3 +160,26 @@ export const SPECIALTY_LABEL: Record<string, Pair> = {
   paediatrician: { en: "Paediatrician", hi: "शिशु रोग विशेषज्ञ" },
   lactation: { en: "Lactation consultant", hi: "स्तनपान सलाहकार" },
 };
+
+// ---------- cases ----------
+export const caseTitle = (c: Concern, lang: Lang = "en") => CASE_TITLE[c][lang];
+
+export const STATUS_LABEL: Record<CaseStatus, Pair> = {
+  open: { en: "Open", hi: "खुला" },
+  monitoring: { en: "Monitoring", hi: "निगरानी में" },
+  resolved: { en: "Resolved", hi: "सुलझा" },
+};
+export const statusLabel = (s: CaseStatus, lang: Lang = "en") => pick(STATUS_LABEL[s], lang);
+
+/** The small tag on a timeline row for what happened to the case at that moment ("Opened case", "Raised to red", "Reopened"). */
+export function eventLabel(e: Pick<CaseEvent, "type" | "detail">, lang: Lang = "en"): string {
+  const hi = lang === "hi";
+  switch (e.type) {
+    case "opened": return hi ? "केस खुला" : "Opened case";
+    case "reopened": return hi ? "केस दोबारा खुला" : "Reopened case";
+    case "severity_raised": return hi ? `${severityLabel((e.detail.to as Severity) ?? "red", lang)} तक बढ़ा` : `Raised to ${severityLabel((e.detail.to as Severity) ?? "red", "en").toLowerCase()}`;
+    case "link_confirmed": return hi ? "जुड़ाव की पुष्टि हुई" : "Link confirmed";
+    case "link_unlinked": return hi ? "अलग किया गया" : "Separated";
+    default: return hi ? "सुलझा" : "Resolved";
+  }
+}

@@ -33,3 +33,6 @@ export const POSSIBLE_PAIRS: { a: string[]; b: string[] }[] = [
   { a: ["breathless", "chest_pain"], b: BP_CODES },
   { a: ["fever", "fever_chills"], b: ["palpitations"] },
 ];
+
+/** An alert that arrives this soon after a case was resolved reopens it (labelled "Reopened") instead of starting a new case. */
+export const CASE_REOPEN_DAYS = 7;

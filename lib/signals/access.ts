@@ -1,4 +1,4 @@
-import type { Signal } from "../types/cases.ts";
+import type { Case, Signal } from "../types/cases.ts";
 
 /**
  * What a matched professional may see of a mother's signals.
@@ -9,4 +9,13 @@ import type { Signal } from "../types/cases.ts";
 export function visibleSignals(signals: Signal[], shares: boolean): Signal[] {
   if (shares) return signals;
   return signals.filter((s) => s.severity === "red" || s.concern === "SELF_HARM").map((s) => ({ ...s, value: null }));
+}
+
+/**
+ * The cases a professional may see. While she shares, all of them. When she does not, only the red and safety ones: a case's title
+ * names the concern ("Low mood"), so an amber case is hidden entirely rather than shown with its details removed.
+ */
+export function visibleCases(cases: Case[], shares: boolean): Case[] {
+  if (shares) return cases;
+  return cases.filter((c) => c.severityPeak === "red" || c.concern === "SELF_HARM");
 }

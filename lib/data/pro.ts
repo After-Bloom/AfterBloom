@@ -66,7 +66,8 @@ export function useProData() {
     load();
     const sb = supabase();
     const again = () => { if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(load, 400); };
-    const ch = sb.channel(`pro:${uid}`)
+    // a fresh name every time: React runs effects twice in development, and a reused name hands back the already-subscribed channel
+    const ch = sb.channel(`pro:${uid}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "flags" }, again)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "checkins" }, again)
       .subscribe();

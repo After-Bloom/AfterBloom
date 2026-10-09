@@ -10,15 +10,17 @@ import { canJoin, roomUrl } from "@/lib/slots";
 import { rise, stagger } from "@/lib/motion";
 import { usePro } from "@/components/pro/ProProvider";
 import { CallButton, TONE, URGENT, reasonsOf, urgency } from "@/components/pro/parts";
+import { caseTitle } from "@/lib/labels";
 
 /** The dashboard: who needs you right now, one card per patient. Everything else lives under Patients, Alerts, Sessions and Audit log. */
 export default function ProHome() {
-  const { auth } = useApp();
+  const { auth, s } = useApp();
   const tr = useTr();
   const pd = usePro();
 
   const rows = useMemo(() => [...pd.rows].sort((a, b) => urgency(b) - urgency(a) || a.name.localeCompare(b.name)), [pd.rows]);
-  const needing = rows.filter((r) => urgency(r) >= 2 || reasonsOf(r).length > 0);
+  const openCases = (id: string) => (pd.sig.data?.find((p) => p.id === id)?.cases ?? []).filter((c) => c.status !== "resolved").sort((a, b) => Number(b.severityPeak === "red") - Number(a.severityPeak === "red"));
+  const needing = rows.filter((r) => urgency(r) >= 2 || reasonsOf(r).length > 0 || openCases(r.id).length > 0);
   const calm = rows.filter((r) => !needing.includes(r));
   const urgentCount = rows.filter((r) => urgency(r) === 3).length;
   const callbacks = rows.reduce((a, r) => a + r.flags.filter((f) => !f.resolved).length, 0);
@@ -65,6 +67,13 @@ export default function ProHome() {
                       {reasons.slice(0, 3).map((x) => <li key={x} className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${t.soft} ${t.text}`}>{tr(x)}</li>)}
                       {reasons.length > 3 && <li className="rounded-full bg-surface-2 px-2.5 py-0.5 text-xs font-semibold text-ink-muted">{tr("+{n} more", { n: reasons.length - 3 })}</li>}
                     </ul>
+                    {openCases(r.id).length > 0 && (
+                      <ul className="mt-2 space-y-1" aria-label={tr("Open cases")}>
+                        {openCases(r.id).slice(0, 3).map((c) => (
+                          <li key={c.id}><Link href={`/pro/cases/${c.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline"><span className={`h-2.5 w-2.5 rounded-full ${c.severityPeak === "red" ? "bg-danger" : "bg-warn"}`} aria-hidden />{caseTitle(c.concern, s.lang)}<span className="font-normal text-ink-muted">· {tr("{n} alerts", { n: (pd.sig.data?.find((p) => p.id === r.id)?.signals ?? []).filter((x) => x.caseId === c.id).length })}</span></Link></li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <CallButton phone={r.phone} small />

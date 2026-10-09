@@ -8,6 +8,7 @@ import { EPDS_CONFIG } from "@/lib/epds";
 import { PageHead, Tabs, fmtDate } from "@/components/ui";
 import { TrendChart, EpdsChart, BpChart } from "@/components/Charts";
 import RelatedAlerts from "@/components/RelatedAlerts";
+import { CaseCard } from "@/components/pro/CaseCard";
 import { RISK_ITEMS, riskKeys } from "@/lib/risk";
 import { useTr } from "@/lib/i18n";
 import { rise, spring } from "@/lib/motion";
@@ -85,6 +86,18 @@ export default function Patients() {
             {part === "overview" && (
               <div className="space-y-4">
                 {!selected.shares && <p className="rounded-control bg-warn/10 p-3 text-sm font-semibold text-warn">{tr("She is not sharing her check-ins and screening results right now. You still see urgent flags.")}</p>}
+
+                {(() => {
+                  const mine = pd.sig.data?.find((p) => p.id === selected.id);
+                  const cases = (mine?.cases ?? []).filter((c) => c.status !== "resolved" || Date.now() - new Date(c.resolvedAt ?? 0).getTime() < 7 * 86400000);
+                  if (!cases.length) return null;
+                  return (
+                    <section className="space-y-3" aria-labelledby="cases-h">
+                      <h3 id="cases-h" className="font-serif text-xl">{tr("Cases")}</h3>
+                      <ul className="grid gap-3 md:grid-cols-2">{cases.map((c) => <li key={c.id}><CaseCard c={c} signals={mine?.signals ?? []} me={pd.sig.me} /></li>)}</ul>
+                    </section>
+                  );
+                })()}
 
                 <section className="card space-y-3" aria-labelledby="open-h">
                   <h3 id="open-h" className="font-serif text-xl">{tr("Callbacks")}</h3>
