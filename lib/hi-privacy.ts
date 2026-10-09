@@ -1,0 +1,23 @@
+// Hindi for live consent withdrawal, privacy blur, receipts and pause-all-sharing. Wording is a draft pending clinician and native-speaker review.
+export const HI_PRIVACY: Record<string, string> = {
+  "A plain-language note on how to help, every Sunday. No scores or clinical detail.": "हर रविवार मदद के तरीकों पर एक सरल भाषा में नोट। कोई स्कोर या नैदानिक ब्योरा नहीं।",
+  "Pause all sharing": "सारी साझेदारी रोकें",
+  "Stop new details reaching your professional for a while, without changing your switches above. Urgent and safety alerts are never paused.": "ऊपर के स्विच बदले बिना, कुछ समय के लिए नई जानकारी आपके विशेषज्ञ तक पहुँचना रोकें। ज़रूरी और सुरक्षा अलर्ट कभी नहीं रुकते।",
+  "Sharing is paused until you resume.": "साझेदारी तब तक रुकी है जब तक आप इसे फिर से शुरू न करें।",
+  "Sharing is paused until {t}.": "साझेदारी {t} तक रुकी है।",
+  "Resume now": "अभी फिर से शुरू करें",
+  "Pause for 24 hours": "24 घंटे के लिए रोकें",
+  "Pause until I resume": "जब तक मैं फिर शुरू न करूँ, तब तक रोकें",
+  "Receipt": "रसीद",
+  "Could not show it. Try again.": "दिखाया नहीं जा सका। दोबारा कोशिश करें।",
+  "View logged": "देखा जाना दर्ज हुआ",
+  "View logged · Priya can see this": "देखा जाना दर्ज हुआ · प्रिया यह देख सकती हैं",
+  "Hides again soon": "जल्द ही फिर से छिप जाएगा",
+  "Hide": "छुपाएँ",
+  "{n} is sharing again": "{n} फिर से साझा कर रही हैं",
+  "{n} just turned sharing off": "{n} ने अभी साझा करना बंद किया",
+  "Hidden by {n}'s choice · since {t}{c} Red and safety alerts always stay visible.": "{n} की पसंद से छुपाया गया · {t}{c} से। लाल और सुरक्षा अलर्ट हमेशा दिखते रहते हैं।",
+  "earlier": "पहले",
+  "Sharing paused": "साझेदारी रुकी हुई",
+  "Details": "विवरण",
+};

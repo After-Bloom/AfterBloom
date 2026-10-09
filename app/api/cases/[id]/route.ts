@@ -7,6 +7,8 @@ import { notify } from "@/lib/server/notify";
 import { decrypt, encrypt } from "@/lib/server/crypto";
 import { mapCase } from "@/lib/cases/attach";
 import { visibleCases } from "@/lib/signals/access";
+import { blurReasons, blurSensitive } from "@/lib/signals/blur";
+import { hiddenByConsentSince } from "@/lib/server/consentSince";
 import { mapCheckin } from "@/lib/data/load";
 import { WorkflowError, askMother, consentOf, explain, gather, recordAction, requestOf, sendFamilyMessage } from "@/lib/workflow/engine";
 import { canAsk, canSend, type FamilyMember } from "@/lib/workflow/family";
@@ -56,7 +58,11 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
     admin.from("profiles").select("id, full_name").in("role", ["pro", "admin"]),
     admin.from("pros").select("id").eq("is_on_call", true).eq("on_duty", true),
   ]);
-  const signals = filterForPro((g?.signals ?? []), gate.shares);
+  const all = g?.signals ?? [];
+  const signals = blurSensitive(filterForPro(all, gate.shares));
+  // A1: signals the consent check removed, as one placeholder, not nine silent gaps. Red and safety alerts are never in this count.
+  const hiddenCount = all.length - signals.length;
+  const hiddenSince = hiddenCount > 0 ? await hiddenByConsentSince(admin, c.motherId) : null;
   const pname = new Map((profs ?? []).map((p: any) => [p.id as string, p.full_name as string]));
 
   // her last two weeks of check-ins, for the BP chart and the sleep change. Only while she shares them.
@@ -70,6 +76,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
   const events: CaseEvent[] = (evs ?? []).map((e: any) => ({ id: e.id, caseId: e.case_id, at: e.at, type: e.type, actorRole: e.actor_role, actorId: e.actor_id, detail: { ...(e.detail ?? {}), ...(e.actor_id && pname.get(e.actor_id) ? { actorName: pname.get(e.actor_id) } : {}) } }));
   const why = g ? explain(g, now) : null;
   const priority = ((c.priority as Priority | null) ?? why?.priority ?? "P4") as Priority;
+  const reasons = blurReasons(why?.reasons ?? []);
 
   // the family panel: each person with her switch, and what may be done right now (worked out here, from her consent as it is this second)
   const safety = c.concern === "SELF_HARM" || (g?.signals ?? []).some((s) => s.concern === "SELF_HARM");
@@ -89,7 +96,8 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
       id: c.motherId, name: (mother as any)?.profiles?.full_name ?? "", shares: gate.shares, phone: gate.shares || c.severityPeak === "red" ? (mother as any)?.phone ?? null : null,
       day: birth ? Math.max(0, Math.floor((now - new Date(birth).getTime()) / 86400000)) : 0, delivery: gate.shares ? (mother as any)?.delivery ?? "" : "",
     },
-    priority: { value: priority, reasons: why?.reasons ?? [], dueBy: c.dueBy, since: c.prioritySince, acknowledgedAt: c.acknowledgedAt, escalationLevel: c.escalationLevel },
+    hidden: hiddenCount > 0 ? { count: hiddenCount, since: hiddenSince } : null,
+    priority: { value: priority, reasons, dueBy: c.dueBy, since: c.prioritySince, acknowledgedAt: c.acknowledgedAt, escalationLevel: c.escalationLevel },
     recommended: withOverrides(c.concern, priority, (cfg as any)?.value),
     ladder: { next: nextStepIn({ priority, status: c.status, acknowledgedAt: c.acknowledgedAt, prioritySince: c.prioritySince }, now), onCall: (onCall ?? []).map((x: any) => pname.get(x.id) ?? "").filter((n: string) => n && n !== ((owner as any)?.full_name ?? "")) },
     family, emergencyConsent: cs.emergency, safetyCase: safety,
@@ -129,7 +137,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json({ ok: true });
     }
     if (b.action === "family") {
-      await sendFamilyMessage(admin, { caseId: c.id, actor, memberId: String(b.memberId), template: String(b.template ?? "please_call") as TemplateId, notify: (id, n) => notify(admin, id, n) });
+      await sendFamilyMessage(admin, { caseId: c.id, actor, memberId: String(b.memberId), template: String(b.template ?? "please_call") as TemplateId, customText: typeof b.customText === "string" ? b.customText : null, notify: (id, n) => notify(admin, id, n) });
       return NextResponse.json({ ok: true });
     }
     if (b.action === "ask") {

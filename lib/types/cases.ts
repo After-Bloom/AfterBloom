@@ -49,6 +49,8 @@ export type Signal = {
   linkStatus: LinkStatus;
   notified: boolean;
   caseId: string | null;
+  /** A3: its value is a mood/EPDS/partner-screen detail held back until a professional taps Show (see lib/signals/blur.ts). */
+  blurred?: boolean;
 };
 
 /** What a producer hands to recordSignal(). Everything else is worked out by the linking rules. */

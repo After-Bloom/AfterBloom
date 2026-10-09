@@ -16,6 +16,7 @@ import { LockScreen } from "./LockScreen";
 import { LangToggle } from "./LangToggle";
 import { AlertsBell } from "./AlertsBell";
 import { AccountMenu } from "./AccountMenu";
+import { Toaster } from "./Toast";
 
 const NAV_KEY = "ab.nav";
 // exact match or a real sub-route, so "/check" is not active on "/checkin"
@@ -128,6 +129,7 @@ function Inner({ children }: { children: React.ReactNode }) {
 
       {crisis && <CrisisScreen />}
       {locked && !exiting && <LockScreen />}
+      <Toaster />
     </>
   );
 }

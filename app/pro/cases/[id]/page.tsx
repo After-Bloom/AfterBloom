@@ -11,6 +11,7 @@ import { actionSentence, caseEventSentence, caseTitle, concernLabel, routingReas
 import { dayKey, formatDay, formatTime } from "@/lib/time";
 import { AlertRow, useSignalTitle } from "@/components/pro/AlertRow";
 import { CallButton } from "@/components/pro/parts";
+import { showToast } from "@/components/Toast";
 import { Sparkline } from "@/components/pro/Sparkline";
 import { DueCountdown, PriorityChip, priorityBar } from "@/components/pro/Priority";
 import { ActionDialog, AuditTrail, EscalationCard, FamilyPanel, MoreActions, NextActionCard, WhyPriority, type CaseData, type DialogType } from "@/components/pro/CasePanels";
@@ -40,6 +41,7 @@ export default function CasePage() {
   const viewed = useRef(false);
   const opened = useRef(false);
   const inflight = useRef(false);   // never start a new request while the last one is still running
+  const sharesRef = useRef<boolean | undefined>(undefined);   // A1: her sharing switch as of the last poll, to toast the moment it changes
 
   const load = useCallback(async () => {
     if (inflight.current) return;
@@ -52,6 +54,11 @@ export default function CasePage() {
       const j: CaseData = await res.json();
       setData(j); setProblem("");
       setSince((prev) => (prev === undefined ? j.lastViewedAt : prev));
+      // her consent can change while this page is open; the next poll (every 3s) picks it up and says so at once
+      if (sharesRef.current !== undefined && sharesRef.current !== j.patient.shares) {
+        showToast(j.patient.shares ? tr("{n} is sharing again", { n: j.patient.name || tr("She") }) : tr("{n} just turned sharing off", { n: j.patient.name || tr("She") }));
+      }
+      sharesRef.current = j.patient.shares;
       if (!viewed.current) { viewed.current = true; void fetch(`/api/cases/${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "view" }) }); }
       // arriving from "Call & log outcome" on the queue: open the form straight away
       if (!opened.current) {
@@ -60,10 +67,11 @@ export default function CasePage() {
       }
     } catch { setProblem("error"); }
     finally { inflight.current = false; }
-  }, [id]);
+  }, [id, tr]);
   useEffect(() => {
     void load();
-    const t = setInterval(() => { if (document.visibilityState === "visible") void load(); }, 6000);
+    // A1: refreshed every 3s, so a consent change she makes mid-review is reflected almost at once, not on the next full reload
+    const t = setInterval(() => { if (document.visibilityState === "visible") void load(); }, 3000);
     return () => clearInterval(t);
   }, [load]);
 
@@ -104,6 +112,7 @@ export default function CasePage() {
   const c = data.case;
   const r = c.ownerReason ? routingReason(c.ownerReason, lang) : null;
   const sentence = summarySentence(c, signals, lang, title);
+  const momFirst = (data.patient.name || "").split(" ")[0] || tr("Her");
   const resolved = c.status === "resolved";
   const toConfirm = signals.filter((x) => x.linkStatus === "suggested").length;
   const todayKey = dayKey(new Date().toISOString());
@@ -155,7 +164,13 @@ export default function CasePage() {
       </header>
 
       {resolved && <p role="status" className="flex items-center gap-2 rounded-control bg-ok/10 p-3 text-sm font-semibold text-ok"><CheckCircle2 className="h-5 w-5" aria-hidden />{tr("Resolved")} {c.resolvedAt ? formatTime(c.resolvedAt, lang) : ""}. {tr("If a new alert about this concern arrives within 7 days, the case reopens by itself.")}</p>}
-      {!data.patient.shares && <p className="rounded-control bg-warn/10 p-3 text-sm font-semibold text-warn">{tr("She is not sharing her check-ins and screening results right now. You see red and safety alerts only, without the details.")}</p>}
+      {!data.patient.shares && (
+        <p role="status" className="rounded-control bg-warn/10 p-3 text-sm font-semibold text-warn">
+          {data.hidden
+            ? tr("Hidden by {n}'s choice · since {t}{c} Red and safety alerts always stay visible.", { n: momFirst, t: data.hidden.since ? formatTime(data.hidden.since, lang) : tr("earlier"), c: data.hidden.count > 1 ? ` (${data.hidden.count})` : "" })
+            : tr("She is not sharing her check-ins and screening results right now. You see red and safety alerts only, without the details.")}
+        </p>
+      )}
 
       {sentence && <blockquote className="card !p-4 font-serif text-lg italic leading-snug text-plum-900">“{sentence}”</blockquote>}
 

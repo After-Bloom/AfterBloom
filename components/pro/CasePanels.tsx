@@ -14,6 +14,8 @@ import type { Case } from "@/lib/types/cases";
 export type CaseData = {
   me: string; case: Case; ownerName: string;
   patient: { id: string; name: string; shares: boolean; phone: string | null; day: number; delivery: string };
+  /** A1: alerts the consent check removed just now, as one count, not a silent gap. Never counts red or safety alerts. */
+  hidden: { count: number; since: string | null } | null;
   priority: { value: Priority; reasons: { key: string; [k: string]: unknown }[]; dueBy: string | null; since: string | null; acknowledgedAt: string | null; escalationLevel: number };
   recommended: PlaybookEntry;
   ladder: { next: { level: 2 | 3; minutes: number } | null; onCall: string[] };
@@ -178,6 +180,8 @@ const REASON: Record<string, (m: string, n: string) => string> = {
   used: (m) => `${m}'s "Allow once" has already been used`,
 };
 
+const CUSTOM_MESSAGE_MAX = 300;
+
 export function FamilyPanel({ d, post }: { d: CaseData; post: Post }) {
   const { s } = useApp();
   const tr = useTr();
@@ -185,6 +189,8 @@ export function FamilyPanel({ d, post }: { d: CaseData; post: Post }) {
   const mom = first(d.patient.name);
   const [busy, setBusy] = useState("");
   const [tpl, setTpl] = useState<TemplateId>("please_call");
+  const [ownWords, setOwnWords] = useState(false);
+  const [custom, setCustom] = useState("");
   const [msg, setMsg] = useState("");
   const run = async (key: string, body: Record<string, unknown>, ok: string) => {
     setBusy(key); setMsg("");
@@ -193,21 +199,32 @@ export function FamilyPanel({ d, post }: { d: CaseData; post: Post }) {
     setMsg(e ? tr("Not sent: {r}", { r: e.replace(/_/g, " ") }) : ok);
   };
   const REQ: Record<string, string> = { pending: tr("Waiting for her answer"), allow_once: tr("Allowed once"), always: tr("Always allowed"), declined: tr("She chose Not now") };
+  const customReady = custom.trim().length > 0;
 
   return (
     <section className="card space-y-3" aria-labelledby="fam-h">
       <div><h2 id="fam-h" className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-ink-muted"><HeartHandshake className="h-4 w-4" aria-hidden />{tr("Family")}</h2><p className="text-xs text-ink-muted">{tr("Checked against {m}'s consent, right now.", { m: mom })}</p></div>
       {d.family.length === 0 && <p className="text-sm text-ink-muted">{tr("No family members are linked.")}</p>}
       {d.family.length > 0 && (
-        <label className="block text-xs font-bold text-plum-800">{tr("Message")}
-          <select className="input mt-1 !py-1.5 text-sm" value={tpl} onChange={(e) => setTpl(e.target.value as TemplateId)}>
-            {(Object.keys(FAMILY_TEMPLATES) as TemplateId[]).map((k) => <option key={k} value={k}>{FAMILY_TEMPLATES[k][lang](mom)}</option>)}
-          </select>
-        </label>
+        <div className="space-y-2">
+          {ownWords ? (
+            <label className="block text-xs font-bold text-plum-800">{tr("Your message")}
+              <textarea className="input mt-1 min-h-[72px] text-sm" maxLength={CUSTOM_MESSAGE_MAX} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder={tr("Write a short, respectful message...")} />
+              <span className="mt-1 flex items-center justify-between text-xs font-normal text-ink-muted"><span>{tr("Keep it respectful. Avoid sharing her health details, scores or a diagnosis.")}</span><span>{custom.length}/{CUSTOM_MESSAGE_MAX}</span></span>
+            </label>
+          ) : (
+            <label className="block text-xs font-bold text-plum-800">{tr("Message")}
+              <select className="input mt-1 !py-1.5 text-sm" value={tpl} onChange={(e) => setTpl(e.target.value as TemplateId)}>
+                {(Object.keys(FAMILY_TEMPLATES) as TemplateId[]).map((k) => <option key={k} value={k}>{FAMILY_TEMPLATES[k][lang](mom)}</option>)}
+              </select>
+            </label>
+          )}
+          <button type="button" className="text-xs font-bold text-primary underline underline-offset-2" onClick={() => setOwnWords((v) => !v)}>{ownWords ? tr("Use a template instead") : tr("Write my own message instead")}</button>
+        </div>
       )}
       <ul className="space-y-3">
         {d.family.map((f) => {
-          const can = f.canSend.ok && f.joined;
+          const can = f.canSend.ok && f.joined && (!ownWords || customReady);
           const why = f.canSend.ok === false ? (REASON[f.canSend.reason]?.(mom, f.name) ?? "") : !f.joined ? `${f.name} has not joined the app yet` : "";
           return (
             <li key={f.id} className="space-y-2 rounded-control border border-line p-3">
@@ -215,7 +232,7 @@ export function FamilyPanel({ d, post }: { d: CaseData; post: Post }) {
                 <div className="min-w-0"><p className="font-bold">{tr(f.name)}</p><p className="text-xs text-ink-muted">{tr(f.relation)}</p></div>
                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${f.alerts ? "bg-ok/15 text-ok" : "bg-surface-2 text-ink-muted"}`}>{f.alerts ? tr("alerts ON") : tr("alerts OFF")}</span>
               </div>
-              <button className="btn-primary w-full !py-2 text-sm" disabled={!can || !!busy} onClick={() => run(`send-${f.id}`, { action: "family", memberId: f.id, template: tpl }, tr("Message sent to {n}.", { n: f.name }))}>
+              <button className="btn-primary w-full !py-2 text-sm" disabled={!can || !!busy} onClick={() => run(`send-${f.id}`, { action: "family", memberId: f.id, template: tpl, customText: ownWords ? custom.trim() : undefined }, tr("Message sent to {n}.", { n: f.name }))}>
                 {busy === `send-${f.id}` && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}{tr("Send message")}
               </button>
               {!can && <p className="flex items-start gap-1.5 text-xs text-ink-muted"><ShieldX className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />{tr(why)}</p>}

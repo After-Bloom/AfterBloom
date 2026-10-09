@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Alert, Audit, Booking, Checkin, EpdsResult, FamilyMember, Flag, State, SymptomLog } from "../store";
+import type { Alert, Booking, Checkin, EpdsResult, FamilyMember, Flag, State, SymptomLog } from "../store";
 import type { Level } from "../symptoms";
 
 // Turn database rows into the shapes the screens already use. Day strings are plain dates ("2026-10-04").
@@ -23,7 +23,7 @@ export async function loadAccount(sb: SupabaseClient, uid: string) {
 /** Everything a mother sees about herself and her baby. RLS guarantees she only receives her own rows. */
 export async function loadMother(sb: SupabaseClient, uid: string): Promise<Partial<State>> {
   const since = new Date(Date.now() - 120 * 86400000).toISOString().slice(0, 10);
-  const [m, ci, sl, ep, fl, fam, bk, vac, gr, ms, ben, sh, ps, au, bl] = await Promise.all([
+  const [m, ci, sl, ep, fl, fam, bk, vac, gr, ms, ben, sh, ps, bl] = await Promise.all([
     sb.from("mothers").select("*").eq("id", uid).maybeSingle(),
     sb.from("checkins").select("*").eq("mother_id", uid).gte("day", since).order("day"),
     sb.from("symptom_logs").select("*").eq("mother_id", uid).order("created_at", { ascending: false }).limit(60),
@@ -37,7 +37,6 @@ export async function loadMother(sb: SupabaseClient, uid: string): Promise<Parti
     sb.from("benefit_steps").select("step").eq("mother_id", uid),
     sb.from("night_shifts").select("*").eq("mother_id", uid).gte("day", new Date(Date.now() - 86400000).toISOString().slice(0, 10)),
     sb.from("partner_screens").select("created_at, yes_count").eq("mother_id", uid).order("created_at", { ascending: false }).limit(10),
-    sb.from("audit_log").select("at, actor_name, action").eq("mother_id", uid).order("at", { ascending: false }).limit(50),
     sb.from("baby_logs").select("id, kind, at").eq("mother_id", uid).gte("at", new Date(Date.now() - 14 * 86400000).toISOString()).order("at", { ascending: false }).limit(600),
   ]);
   const mo: any = m.data;
@@ -49,6 +48,7 @@ export async function loadMother(sb: SupabaseClient, uid: string): Promise<Parti
     consent: {
       emergencyAlert: mo.consent_emergency_alert, shareWithPro: mo.consent_share_pro, familyNote: mo.consent_family_note,
       emergencyContact: mo.emergency_contact_name ?? "", emergencyPhone: mo.emergency_contact_phone ?? "", cloudMatch: mo.consent_cloud_match, sms: !!mo.consent_sms,
+      sharingPausedUntil: mo.sharing_paused_until ?? null,
     },
     risk: mo.risk ?? {},
     babyLogs: (bl.data ?? []).map((r: any) => ({ id: r.id, kind: r.kind, at: r.at })),
@@ -65,6 +65,5 @@ export async function loadMother(sb: SupabaseClient, uid: string): Promise<Parti
     benefits: (ben.data ?? []).map((r: any) => r.step),
     shifts,
     partnerScreens: (ps.data ?? []).map((r: any) => ({ date: r.created_at, yes: r.yes_count })),
-    audit: (au.data ?? []).map((r: any): Audit => ({ at: r.at, who: r.actor_name, what: r.action })),
   };
 }

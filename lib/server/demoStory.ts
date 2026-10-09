@@ -60,8 +60,8 @@ export async function resetDemo(admin: SupabaseClient) {
   await admin.from("partner_screens").delete().in("mother_id", ids);
   await admin.from("symptom_logs").delete().in("mother_id", ids);
 
-  // her consent as the demo is set up: Rohan's alerts ON, Kamla's OFF, sharing on
-  await admin.from("mothers").update({ consent_share_pro: true, consent_emergency_alert: true }).eq("id", priya);
+  // her consent as the demo is set up: Rohan's alerts ON, Kamla's OFF, sharing on, no pause left over from a previous run
+  await admin.from("mothers").update({ consent_share_pro: true, consent_emergency_alert: true, sharing_paused_until: null }).eq("id", priya);
   await admin.from("family_members").update({ sees_alerts: true }).eq("mother_id", priya).eq("name", "Rohan");
   await admin.from("family_members").update({ sees_alerts: false }).eq("mother_id", priya).eq("name", "Kamla");
 

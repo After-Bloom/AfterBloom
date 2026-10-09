@@ -7,7 +7,7 @@ import { useReducedMotion } from "motion/react";
 import { useApp } from "@/lib/store";
 import { useActions } from "@/lib/actions";
 import { useFamilyView } from "@/lib/data/family";
-import { VACCINES, VACCINE_LAST_VERIFIED, MILESTONES } from "@/lib/vaccines";
+import { VACCINES, VACCINE_LAST_VERIFIED } from "@/lib/vaccines";
 import { WEIGHT_REF, ageMonths, Sex } from "@/lib/growth";
 import { weightNotes } from "@/lib/babylog";
 import { FeedingLog } from "@/components/FeedingLog";
@@ -42,7 +42,7 @@ export default function Baby() {
   const refData = useMemo(() => ref.p50.map((_, mo) => ({ mo, p3: ref.p3[mo], p50: ref.p50[mo], p97: ref.p97[mo] })), [ref]);
   const babyData = useMemo(() => s.weights.filter((w) => w.kg > 0).map((w) => ({ mo: Math.round(ageMonths(birth, w.date) * 10) / 10, kg: w.kg })), [s.weights, birth]);
 
-  const tabs = family ? [{ id: "vax", label: "Vaccines" }] : [{ id: "vax", label: "Vaccines" }, { id: "feed", label: "Feeding" }, { id: "growth", label: "Growth" }, { id: "miles", label: "Milestones" }, { id: "pmmvy", label: "Benefits" }];
+  const tabs = family ? [{ id: "vax", label: "Vaccines" }] : [{ id: "vax", label: "Vaccines" }, { id: "feed", label: "Feeding" }, { id: "growth", label: "Growth" }];
 
   const nextDue = VACCINES.find((v) => !vaccinesDone.includes(v.id));
   return (
@@ -111,27 +111,6 @@ export default function Baby() {
         </section>
       )}
 
-      {tab === "miles" && !family && (
-        <m.div variants={stagger()} initial="hidden" animate="show" className="space-y-3">
-          {MILESTONES.map((ms) => (
-            <m.section variants={rise} key={ms.age} className="card"><h2 className="font-serif text-xl">{tr(ms.age)}</h2>
-              {ms.items.map((it) => { const k = `${ms.age}:${it}`; return <label key={k} className="mt-1 flex min-h-[44px] items-center gap-3"><input type="checkbox" className="h-5 w-5 accent-[rgb(var(--primary-fill))]" checked={s.milestonesDone.includes(k)} onChange={() => act.toggleMilestone(k)} />{tr(it)}</label>; })}
-            </m.section>
-          ))}
-          <p className="text-xs text-ink-muted">{tr("Every baby develops at their own pace. This checklist is a guide, not a test. Always talk to your doctor if you are worried.")}</p>
-        </m.div>
-      )}
-
-      {tab === "pmmvy" && !family && (
-        <section className="card space-y-3">
-          <h2 className="font-serif text-xl">{tr("PMMVY maternity benefit")}</h2>
-          <p className="text-sm">{tr("For a first child, the government scheme pays ₹5,000 in two instalments. One is linked to the baby's 14-week vaccinations.")}</p>
-          {[{ id: "pmmvy1", t: "Instalment 1: register the pregnancy and get a health check", done: s.benefits.includes("pmmvy1") }, { id: "pmmvy2", t: "Instalment 2: birth registered + first cycle of vaccines (up to 14 weeks)", done: s.benefits.includes("pmmvy2") || s.vaccinesDone.includes("14w") }].map((x) => (
-            <label key={x.id} className="flex min-h-[56px] items-center gap-3 rounded-control border border-line p-3"><input type="checkbox" className="h-5 w-5 accent-[rgb(var(--primary-fill))]" checked={x.done} onChange={() => act.toggleBenefit(x.id)} />{tr(x.t)}</label>
-          ))}
-          <p className="rounded-control bg-plum-100 p-3 text-sm">{tr("Check eligibility and exact steps with your ANM or Anganwadi. Rules may change.")}</p>
-        </section>
-      )}
       <Disclaimer />
     </div>
   );

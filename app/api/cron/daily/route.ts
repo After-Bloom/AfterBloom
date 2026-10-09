@@ -5,6 +5,7 @@ import { escalateOverdue } from "@/lib/server/loops";
 import { followUpParent, recordSignal } from "@/lib/server/signals";
 import { deriveCallbackOverdue } from "@/lib/signals/derive";
 import { sendText, smsConfigured, toE164 } from "@/lib/server/channels";
+import { effectiveShares } from "@/lib/consent";
 
 // Runs once a day (Vercel Cron; it sends "Authorization: Bearer $CRON_SECRET"). Idempotent: running it twice does not double-send.
 //  1. gentle check-in reminder to mothers who have not checked in today (neutral wording)
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
   const since = new Date(now.getTime() - 3 * 86400000).toISOString();
   const out = { reminders: 0, familyNudges: 0, overdue: 0, weeklyNotes: 0, snapshots: 0, loops: 0, texts: 0, questions: 0 };
 
-  const { data: mothers } = await admin.from("mothers").select("id, birth_date, consent_emergency_alert, consent_family_note, consent_sms, phone, profiles(full_name)");
+  const { data: mothers } = await admin.from("mothers").select("id, birth_date, consent_emergency_alert, consent_family_note, consent_sms, sharing_paused_until, phone, profiles(full_name)");
   const early = (mothers ?? []).filter((m: any) => (now.getTime() - new Date(m.birth_date).getTime()) / 86400000 <= 42);
   const ids = early.map((m: any) => m.id);
   const { data: recent } = ids.length ? await admin.from("checkins").select("mother_id, day").in("mother_id", ids).gte("day", twoAgo) : { data: [] as any[] };
@@ -44,7 +45,8 @@ export async function GET(req: Request) {
       const to = m.consent_sms && smsConfigured() ? toE164(m.phone) : null;
       if (to && await sendText(to, `AfterBloom: you have a new message. Open ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/checkin`)) out.texts++;
     }
-    if (m.consent_emergency_alert && !done.has(today) && !done.has(yesterday)) {
+    // B8: a paused mother gets no family nudge either, same as every other non-emergency share
+    if (m.consent_emergency_alert && effectiveShares(true, m.sharing_paused_until) && !done.has(today) && !done.has(yesterday)) {
       const { data: fam } = await admin.from("family_members").select("user_id").eq("mother_id", m.id).eq("status", "active").eq("sees_alerts", true).not("user_id", "is", null);
       for (const f of fam ?? []) {
         if (already(f.user_id as string, m.id, "AfterBloom")) continue;
@@ -81,7 +83,7 @@ export async function GET(req: Request) {
   if (now.getUTCDay() === 0) {
     const weekStart = day(new Date(now.getTime() - 6 * 86400000));
     for (const m of early as any[]) {
-      if (m.consent_family_note) { const r = await sendFamilyNote(admin, m.id, String(m.profiles?.full_name ?? "She").split(" ")[0]); out.weeklyNotes += r.sent; }
+      if (m.consent_family_note && effectiveShares(true, m.sharing_paused_until)) { const r = await sendFamilyNote(admin, m.id, String(m.profiles?.full_name ?? "She").split(" ")[0]); out.weeklyNotes += r.sent; }
       const { data: wk } = await admin.from("checkins").select("mood, appetite, sleep_hours, level").eq("mother_id", m.id).gte("day", weekStart);
       const n = wk?.length ?? 0;
       const avg = (k: string) => (n ? Math.round(((wk as any[]).reduce((a, c) => a + Number(c[k]), 0) / n) * 10) / 10 : null);

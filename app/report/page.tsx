@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { Check, Loader2, MessageCircle, Printer, Send } from "lucide-react";
+import { Check, Download, Loader2, MessageCircle, Send } from "lucide-react";
 import { useApp, daysSince, dayStr } from "@/lib/store";
 import { useActions } from "@/lib/actions";
 import { weekData, stageText, face, recoveryWeeks } from "@/lib/report";
@@ -22,6 +22,8 @@ export default function Report() {
   const [tab, setTab] = useState("week");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<string | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfErr, setPdfErr] = useState("");
   const w = weekData(s);
   const age = daysSince(s.mother.birth);
   const nextEpds = EPDS_SCHEDULE.find((e) => e.day >= age);
@@ -56,6 +58,30 @@ export default function Report() {
     setSending(false);
     const j = await res.json().catch(() => ({}));
     setSent(res.ok ? tr("Sent to {n} family members.", { n: j.sent ?? 0 }) : tr("Could not send. Please try again."));
+  };
+
+  // A real, selectable PDF, built on the phone from the same data on screen and downloaded directly - not a
+  // system print dialog, whose "Save as PDF" is unreliable from a PWA's standalone window on some phones.
+  const downloadPdf = async () => {
+    setPdfBusy(true); setPdfErr("");
+    try {
+      const { buildReportPdf } = await import("@/lib/reportPdf");
+      const lastWeight = s.weights.filter((w) => w.kg > 0).slice(-1)[0];
+      const bytes = await buildReportPdf({
+        motherName: s.mother.name, day: age, delivery: s.mother.delivery,
+        dateLabel: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+        riskLine: !s.risk.set ? "Not filled in yet." : riskKeys(s.risk).length ? riskKeys(s.risk).map((k) => RISK_ITEMS.find((x) => x.k === k)!.label).join("; ") : "No extra risks reported.",
+        babyWeightLine: s.mother.birthWeightKg ? `Baby: birth weight ${s.mother.birthWeightKg} kg${lastWeight ? `; last weight ${lastWeight.kg} kg (${fmtDate(lastWeight.date)})` : ""}` : null,
+        checkedDays: twoWeeks.length, totalDays: 14, avgSleep,
+        epds: s.epds.map((e) => ({ dateLabel: fmtDate(e.date), total: e.total, band: e.band, selfHarm: e.selfHarm })),
+        symptoms: flagged.map((l) => ({ dateLabel: fmtDate(l.date), level: l.level as "RED" | "AMBER", labels: l.labels.join(", "), advice: ADVICE[l.level] })),
+        bp: bps.map((c) => ({ dateLabel: fmtDate(c.date), sys: c.bp!.sys, dia: c.bp!.dia })),
+        missed: missed.map((d) => d.label),
+      });
+      const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
+      const a = document.createElement("a"); a.href = url; a.download = `afterbloom-report-${dayStr(new Date())}.pdf`; a.click(); URL.revokeObjectURL(url);
+    } catch { setPdfErr(tr("Could not build the PDF. Please try again.")); }
+    setPdfBusy(false);
   };
 
   return (
@@ -109,9 +135,10 @@ export default function Report() {
       {tab === "doctor" && (
         <div className="space-y-4">
           <div className="no-print card flex flex-wrap items-center gap-3">
-            <button className="btn-primary" onClick={() => window.print()}><Printer className="h-4 w-4" aria-hidden />{tr("Download as PDF")}</button>
+            <button className="btn-primary" onClick={downloadPdf} disabled={pdfBusy}>{pdfBusy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}{tr("Download as PDF")}</button>
             <button className="btn-soft" onClick={whatsapp}><MessageCircle className="h-4 w-4" aria-hidden />{tr("Share on WhatsApp")}</button>
             <div className="min-w-[14rem] flex-1"><Toggle on={s.consent.shareWithPro} onChange={(v) => act.setConsent({ shareWithPro: v })} label="My AfterBloom professional sees this automatically" /></div>
+            {pdfErr && <p role="alert" className="w-full text-sm font-semibold text-danger">{pdfErr}</p>}
           </div>
           <article className="card space-y-4 print:border-0 print:p-0 print:shadow-none" aria-label={tr("One-page clinical summary")}>
             <header className="border-b border-line pb-3">

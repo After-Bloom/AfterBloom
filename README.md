@@ -128,7 +128,7 @@ node --test tests/epds.test.ts tests/risk.test.ts  # automated tests
 
 **Live site:** https://after-bloom.vercel.app
 
-You can try it without signing up: open the sign-in page and use the "Try the demo" buttons (mother, family member, professional, ASHA worker, moderator, admin).
+You can try it without signing up: open the sign-in page and use the "Try the demo" buttons (mother, family member, professional, moderator, admin).
 
 ---
 
@@ -160,7 +160,6 @@ Copy `.env.example` to `.env.local` and fill in the values below.
 | Family (her husband) | `rohan@demo.afterbloom.app` |
 | Professional (sample psychologist) | `dr.rao@demo.afterbloom.app` |
 | Moderator | `moderator@demo.afterbloom.app` |
-| ASHA worker | `asha@demo.afterbloom.app` |
 | Admin | `admin@demo.afterbloom.app` |
 
 You can also sign in from the "Try the demo" buttons on the sign-in page. Before real users arrive, set `ENABLE_DEMO=false` and delete the demo users.

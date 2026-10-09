@@ -83,12 +83,11 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
     await must("mothers upsert", admin.from("mothers").upsert({
       id, baby_name: m.baby, birth_date: birth, delivery: m.delivery, city: m.city, hospital_id: DEMO_HOSPITAL,
       emergency_contact_name: m.family ? "Rohan (husband)" : null, emergency_contact_phone: m.family ? "+91 98000 00000" : null,
-      consent_share_pro: true, consent_emergency_alert: !!m.emergencyAlert, consent_family_note: false, phone: `+91 98${String(10000 + DEMO_MOTHERS.indexOf(m) * 1111).padStart(5, "0")}00`, baby_sex: DEMO_MOTHERS.indexOf(m) % 2 ? "boy" : "girl",
+      consent_share_pro: true, consent_emergency_alert: !!m.emergencyAlert, consent_family_note: false, sharing_paused_until: null, phone: `+91 98${String(10000 + DEMO_MOTHERS.indexOf(m) * 1111).padStart(5, "0")}00`, baby_sex: DEMO_MOTHERS.indexOf(m) % 2 ? "boy" : "girl",
     }));
     await admin.from("pro_patients").delete().eq("mother_id", id);
     if (!m.routed) await must("pro_patients upsert", admin.from("pro_patients").upsert({ pro_id: proIds.drrao, mother_id: id })); // the others are matched by the routing rules below
     if (m.risk) await admin.from("mothers").update({ risk: m.risk }).eq("id", id);
-    await must("asha_assignments upsert", admin.from("asha_assignments").upsert({ asha_id: staff.asha, mother_id: id }));
 
     // clear then write history so re-seeding is clean
     await Promise.all(["cases", "signals", "checkins", "epds_results", "flags", "baby_vaccines", "baby_growth", "symptom_logs", "partner_screens"].map((t) => admin.from(t).delete().eq("mother_id", id)));
@@ -162,10 +161,6 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
   await admin.from("circle_events").delete().eq("circle_id", circleId);
   await must("circle_events insert", admin.from("circle_events").insert({ circle_id: circleId, host_id: proIds.shah, title: "Ask the gynaecologist: recovery after delivery", starts_at: new Date(Date.now() + 5 * DAY + 18 * 3600000).toISOString(), created_by: staff.moderator }));
   await must("circle_events insert", admin.from("circle_events").insert({ circle_id: circleId, host_id: proIds.nair, title: "Feeding and latching: live Q&A", starts_at: new Date(Date.now() + 12 * DAY + 18 * 3600000).toISOString(), created_by: staff.moderator }));
-  // ASHA visits already done for Anita (day 31): 3, 7, 14, 21, 28
-  await admin.from("asha_visits").delete().eq("asha_id", staff.asha);
-  await admin.from("asha_visits").insert([3, 7, 14, 21, 28].map((d) => ({ asha_id: staff.asha, mother_id: mothers.anita, day: d, done_on: isoDay(daysAgo(31 - d)) })));
-  await admin.from("asha_visits").insert([3, 7].map((d) => ({ asha_id: staff.asha, mother_id: mothers.priya, day: d === 3 ? 3 : 7, done_on: isoDay(daysAgo(9 - d)) })).filter((v) => v.day <= 9));
   log.push("1 circle with an opening conversation and 2 expert sessions");
   return { ok: true, log, mothers: Object.keys(mothers), password };
 }

@@ -207,8 +207,8 @@ export function reasonText(r: ReasonLike, concern: Concern, lang: Lang = "en"): 
     case "red_unhandled": return hi ? "लाल अलर्ट पर अभी कार्रवाई नहीं हुई" : "Red alert not yet handled";
     case "red_handled": return hi ? "लाल अलर्ट पर कार्रवाई हुई, पर इलाज की पुष्टि बाकी" : "Red alert handled, but care is not confirmed yet";
     case "amber_worse": return hi ? "अंबर अलर्ट बिगड़ रहे हैं" : "Amber alerts getting worse";
-    case "epds_high": return hi ? `मूड स्क्रीनिंग ${r.total}: अधिक संभावना` : `Mood screen ${r.total}: probable`;
-    case "epds_mid": return hi ? `मूड स्क्रीनिंग ${r.total}: संभावित` : `Mood screen ${r.total}: possible`;
+    case "epds_high": return typeof r.total === "number" ? (hi ? `मूड स्क्रीनिंग ${r.total}: अधिक संभावना` : `Mood screen ${r.total}: probable`) : (hi ? "मूड स्क्रीनिंग: अधिक संभावना" : "Mood screen: probable");
+    case "epds_mid": return typeof r.total === "number" ? (hi ? `मूड स्क्रीनिंग ${r.total}: संभावित` : `Mood screen ${r.total}: possible`) : (hi ? "मूड स्क्रीनिंग: संभावित" : "Mood screen: possible");
     case "amber_single": return hi ? "एक अंबर अलर्ट" : "A single amber alert";
     case "mood_trend": return hi ? "मन की चिंताएँ बढ़ रही हैं" : "Mood concerns building";
     case "care_confirmed": return hi ? "कार्रवाई हो चुकी और इलाज की पुष्टि हुई" : "Actions done and care confirmed";
