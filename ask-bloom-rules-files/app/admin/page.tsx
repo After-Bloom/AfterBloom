@@ -9,7 +9,6 @@ import { AdminAsk } from "@/components/AdminAsk";
 
 type Person = { id: string; role: string; full_name: string; city: string | null; is_demo: boolean; created_at: string; email: string };
 type Hospital = { hospital: string; mothers: number; with_open_flags: number; probable_screens: number; checkins_last_7d: number };
-type Load = { id: string; name: string; specialty: string | null; onDuty: boolean; isOnCall: boolean; maxOpen: number; openLoad: number };
 type Cfg = { key: string; value: any; version: number; signed_off_by: string | null; signed_off_at: string | null };
 const ROLES = ["pro", "moderator", "asha", "admin"] as const;
 const TITLES = ["Clinical psychologist", "Counsellor", "Psychiatrist", "Gynaecologist", "Lactation consultant", "Paediatrician"];
@@ -18,7 +17,7 @@ const LEVELS: Level[] = ["RED", "AMBER", "GREEN"];
 export default function Admin() {
   const tr = useTr();
   const [tab, setTab] = useState("overview");
-  const [data, setData] = useState<{ people: Person[]; hospitals: Hospital[]; config: Cfg[]; loads?: Load[] } | null>(null);
+  const [data, setData] = useState<{ people: Person[]; hospitals: Hospital[]; config: Cfg[] } | null>(null);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,28 +84,6 @@ export default function Admin() {
           <div className="card overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead><tr className="text-left text-ink-muted"><th className="py-2">{tr("Hospital")}</th><th>{tr("Mothers")}</th><th>{tr("Open flags")}</th><th>{tr("Probable screens")}</th><th>{tr("Check-ins, 7 days")}</th></tr></thead>
             <tbody>{data.hospitals.map((h) => <tr key={h.hospital} className="border-t border-line"><td className="py-2 font-semibold">{h.hospital}</td><td>{h.mothers}</td><td>{h.with_open_flags}</td><td>{h.probable_screens}</td><td>{h.checkins_last_7d}</td></tr>)}</tbody></table>
             <p className="mt-3 text-xs text-ink-muted">{tr("Anonymised totals only: no names, no records. For a hospital partner's follow-up report.")}</p></div>
-          {(data.loads?.length ?? 0) > 0 && (
-            <div className="card space-y-3" aria-labelledby="load-h">
-              <div><h2 id="load-h" className="font-serif text-xl">{tr("Professional load")}</h2>
-                <p className="text-sm text-ink-muted">{tr("Returning mothers go to the doctor they already know, even above the limit. New mothers go to the least busy professional who is on duty and below their limit, and the on-call professional takes over when everyone is full.")}</p></div>
-              <ul className="space-y-2">{[...data.loads].sort((a, b) => (a.specialty ?? "").localeCompare(b.specialty ?? "") || a.name.localeCompare(b.name)).map((l) => {
-                const pct = Math.min(100, Math.round((l.openLoad / Math.max(1, l.maxOpen)) * 100)), full = l.openLoad >= l.maxOpen;
-                return (
-                  <li key={l.id} className="rounded-control border border-line p-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <b className="min-w-0 flex-1">{l.name}</b>
-                      <span className="text-xs text-ink-muted">{l.specialty ? tr(l.specialty.charAt(0).toUpperCase() + l.specialty.slice(1)) : tr("Not set")}</span>
-                      {l.isOnCall && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{tr("On call")}</span>}
-                      {!l.onDuty && <span className="rounded-full bg-surface-2 px-2 py-0.5 text-xs font-bold text-ink-muted">{tr("Off duty")}</span>}
-                      <span className={`text-sm font-bold ${full ? "text-danger" : "text-ok"}`}>{l.openLoad} {tr("of")} {l.maxOpen} {full ? `· ${tr("at capacity")}` : ""}</span>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={l.maxOpen} aria-valuenow={l.openLoad} aria-label={tr("Open load against the limit")}><div className={`h-full rounded-full ${full ? "bg-danger" : "bg-ok"}`} style={{ width: `${pct}%` }} /></div>
-                  </li>
-                );
-              })}</ul>
-              <p className="text-xs text-ink-muted">{tr("Load counts open urgent items for the mothers matched with each professional. It will count open cases once cases are added.")}</p>
-            </div>
-          )}
         </section>
       )}
 

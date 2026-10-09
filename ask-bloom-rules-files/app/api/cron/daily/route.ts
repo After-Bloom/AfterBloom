@@ -2,8 +2,6 @@ import { NextResponse } from "next/server";
 import { adminClient } from "@/lib/supabase/server";
 import { notify, sendFamilyNote } from "@/lib/server/notify";
 import { escalateOverdue } from "@/lib/server/loops";
-import { followUpParent, recordSignal } from "@/lib/server/signals";
-import { deriveCallbackOverdue } from "@/lib/signals/derive";
 import { sendText, smsConfigured, toE164 } from "@/lib/server/channels";
 
 // Runs once a day (Vercel Cron; it sends "Authorization: Bearer $CRON_SECRET"). Idempotent: running it twice does not double-send.
@@ -55,11 +53,8 @@ export async function GET(req: Request) {
   }
 
   // overdue callbacks go to the professional (and are still open on their dashboard)
-  const { data: late } = await admin.from("flags").select("id, mother_id, kind, due_at, created_at").eq("resolved", false).eq("kind", "epds").lt("due_at", now.toISOString());
+  const { data: late } = await admin.from("flags").select("id, mother_id, kind, due_at").eq("resolved", false).eq("kind", "epds").lt("due_at", now.toISOString());
   for (const f of late ?? []) {
-    // an overdue callback is also saved as a signal: a follow-up of the mood alert that created the callback
-    const parent = await followUpParent(admin, f.mother_id, f.created_at, "MOOD");
-    await recordSignal(admin, { ...deriveCallbackOverdue(f.mother_id, f, now.toISOString()), followUpOf: parent?.id ?? null, forceNotify: true });
     const { data: pros } = await admin.from("pro_patients").select("pro_id").eq("mother_id", f.mother_id);
     for (const p of pros ?? []) {
       if (already(p.pro_id as string, f.mother_id, "Callback overdue")) continue;

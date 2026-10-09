@@ -33,7 +33,6 @@ export const PATTERNS: [RegExp, (m: RegExpMatchArray, tr: (s: string) => string)
 ];
 
 import { HI_DATA } from "./hi-data";
-import { HI_GROUPING } from "./hi-grouping";
 const BASE: Record<string, string> = {
   "Week 2": "सप्ताह 2", "Week 4": "सप्ताह 4",
   "BCG": "बीसीजी", "OPV-0": "ओपीवी-0", "OPV-1": "ओपीवी-1", "OPV-2": "ओपीवी-2", "OPV-3": "ओपीवी-3",
@@ -434,4 +433,4 @@ const BASE: Record<string, string> = {
   "Real ASHA onboarding and district pilots with NHM. Depression screening is not currently part of HBNC home visits (days 3, 7, 14, 21, 28, 42).": "एनएचएम के साथ असली आशा जुड़ाव और ज़िला स्तर के पायलट। अवसाद की जाँच अभी एचबीएनसी गृह भेंटों (दिन 3, 7, 14, 21, 28, 42) का हिस्सा नहीं है।",
 };
 
-export const HI: Record<string, string> = { ...HI_DATA, ...HI_EXTRA, ...HI_DEPTH, ...HI_JOURNEY, ...HI_GROUPING, ...HI_ASK, ...BASE };
+export const HI: Record<string, string> = { ...HI_DATA, ...HI_EXTRA, ...HI_DEPTH, ...HI_JOURNEY, ...HI_ASK, ...BASE };

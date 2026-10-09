@@ -18,6 +18,7 @@ export const FEATURES: Feature[] = [
   { href: "/pro/patients", key: "pro-patients", title: "Patients", desc: "One tab per patient: her alerts, record and trends.", icon: Users, roles: ["pro"] },
   { href: "/pro/alerts", key: "pro-alerts", title: "Alerts", desc: "Callbacks and related alerts.", icon: Bell, roles: ["pro"] },
   { href: "/pro/sessions", key: "pro-sessions", title: "Sessions", desc: "Your booked video sessions.", icon: CalendarClock, roles: ["pro"] },
+  { href: "/pro/questions", key: "pro-questions", title: "Questions", desc: "Ask Bloom questions from your patients.", icon: MessageCircleQuestion, roles: ["pro"] },
   { href: "/pro/audit", key: "pro-audit", title: "Audit log", desc: "Every record you opened.", icon: ClipboardList, roles: ["pro"] },
   { href: "/asha", key: "asha", title: "ASHA dashboard", desc: "Mothers in your area sorted by risk.", icon: Users, tag: "Stretch", roles: ["asha"] },
   { href: "/moderate", key: "moderate", title: "Circle moderation", desc: "Flagged messages and community safety.", icon: ShieldCheck, roles: ["moderator", "admin"] },
