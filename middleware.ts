@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const OPEN = ["/", "/login", "/signup", "/crisis", "/check", "/ask", "/offline"];
 const HOME: Record<string, string> = { mother: "/home", family: "/family-view", pro: "/pro", moderator: "/moderate", asha: "/asha", admin: "/admin" };
 const AREAS: [string, string[]][] = [
-  ["/home", ["mother"]], ["/checkin", ["mother"]], ["/screening", ["mother"]], ["/care", ["mother"]], ["/circles", ["mother"]],
+  ["/home", ["mother"]], ["/checkin", ["mother"]], ["/screening", ["mother"]], ["/care", ["mother"]], ["/care-team", ["mother"]], ["/circles", ["mother"]],
   ["/baby", ["mother", "family"]], ["/family-view", ["family"]], ["/family", ["mother"]], ["/report", ["mother"]],
   ["/pro", ["pro"]], ["/asha", ["asha"]], ["/moderate", ["moderator", "admin"]], ["/admin", ["admin"]],
 ];

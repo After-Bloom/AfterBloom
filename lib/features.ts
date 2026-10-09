@@ -12,6 +12,7 @@ export const FEATURES: Feature[] = [
   { href: "/baby", key: "baby", title: "Baby care", desc: "Vaccines, growth, milestones, benefits.", icon: Baby, roles: ["mother", "family"] },
   { href: "/family", key: "family", title: "Family circle", desc: "Invite family and choose what they see.", icon: HeartHandshake, roles: ["mother"] },
   { href: "/report", key: "report", title: "Weekly report", desc: "Your week, and a one-page summary for your doctor.", icon: FileText, roles: ["mother"] },
+  { href: "/care-team", key: "careteam", title: "What my care team did", desc: "Who looked, who called, who was told.", icon: ClipboardList, roles: ["mother"] },
   { href: "/privacy", key: "privacy", title: "Privacy & safety", desc: "PIN lock, quick exit, consent controls.", icon: Lock, roles: ["mother", "family", "pro", "moderator", "asha", "admin"] },
   { href: "/family-view", key: "fview", title: "Family home", desc: "Learn, help, share night feeds.", icon: BookHeart, roles: ["family"] },
   { href: "/pro", key: "pro", title: "Dashboard", desc: "Who needs you today.", icon: Activity, roles: ["pro"] },

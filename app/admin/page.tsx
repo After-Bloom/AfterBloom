@@ -5,6 +5,7 @@ import { PageHead, Tabs, fmtDate } from "@/components/ui";
 import { SYMPTOMS, Level } from "@/lib/symptoms";
 import { DEFAULT_EPDS, DEFAULT_LEVELS } from "@/lib/clinical";
 import { useTr } from "@/lib/i18n";
+import { AlertLoadMeter, VerifyAudit } from "@/components/admin/AlertLoadMeter";
 
 type Person = { id: string; role: string; full_name: string; city: string | null; is_demo: boolean; created_at: string; email: string };
 type Hospital = { hospital: string; mothers: number; with_open_flags: number; probable_screens: number; checkins_last_7d: number };
@@ -80,10 +81,12 @@ export default function Admin() {
 
       {data && tab === "overview" && (
         <section className="space-y-4">
+          <AlertLoadMeter />
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{[["Mothers", totals.m], ["With an open flag", totals.f], ["Probable screens", totals.p], ["Check-ins, last 7 days", totals.c]].map(([l, n]) => <div key={l as string} className="card !p-4"><div className="font-serif text-3xl text-plum-800">{n as number}</div><div className="text-xs font-semibold text-ink-muted">{tr(l as string)}</div></div>)}</div>
           <div className="card overflow-x-auto"><table className="w-full min-w-[560px] text-sm"><thead><tr className="text-left text-ink-muted"><th className="py-2">{tr("Hospital")}</th><th>{tr("Mothers")}</th><th>{tr("Open flags")}</th><th>{tr("Probable screens")}</th><th>{tr("Check-ins, 7 days")}</th></tr></thead>
             <tbody>{data.hospitals.map((h) => <tr key={h.hospital} className="border-t border-line"><td className="py-2 font-semibold">{h.hospital}</td><td>{h.mothers}</td><td>{h.with_open_flags}</td><td>{h.probable_screens}</td><td>{h.checkins_last_7d}</td></tr>)}</tbody></table>
             <p className="mt-3 text-xs text-ink-muted">{tr("Anonymised totals only: no names, no records. For a hospital partner's follow-up report.")}</p></div>
+          <VerifyAudit />
           {(data.loads?.length ?? 0) > 0 && (
             <div className="card space-y-3" aria-labelledby="load-h">
               <div><h2 id="load-h" className="font-serif text-xl">{tr("Professional load")}</h2>

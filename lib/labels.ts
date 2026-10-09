@@ -3,6 +3,8 @@ import { CONCERN_WINDOW_HOURS, CORROBORATE_HOURS, REPEAT_HOURS } from "./signals
 import { formatClock } from "./time.ts";
 import { CASE_TITLE } from "./cases/titles.ts";
 import type { CaseEvent, CaseStatus } from "./types/cases.ts";
+import { OUTCOME_LABEL } from "./workflow/playbook.ts";
+import type { Outcome, Priority } from "./workflow/priority.ts";
 
 // Every word the grouping screens show lives here, in English with Hindi alongside. The code names (HYPERTENSIVE, DUPLICATE,
 // POSSIBLY_RELATED ...) never reach a screen. Hindi is a draft for a clinician and a native speaker to review.
@@ -150,6 +152,7 @@ export function routingReason(r: RoutingResult, lang: Lang = "en"): { chip: stri
       reason: r.note === "preferred_off_duty" ? (hi ? `उनकी डॉक्टर अभी ड्यूटी पर नहीं हैं: ${r.proName} को सौंपा` : `Her doctor is off duty: assigned to ${r.proName}`) : (hi ? `सबसे कम व्यस्त (${r.proName}) को सौंपा` : `Assigned to the least busy (${r.proName})`),
     };
     case "on_call": return { chip: hi ? "सभी व्यस्त" : "All at capacity", tone: "warn", reason: hi ? `ऑन-कॉल ${r.proName}` : `On-call ${r.proName}` };
+    case "taken_over": return { chip: hi ? "संभाला गया" : "Taken over", tone: "info", reason: hi ? `${r.proName} ने ${r.at ? formatClock(r.at, lang) : ""} पर संभाला` : `Taken over by ${r.proName}${r.at ? ` at ${formatClock(r.at)}` : ""}` };
     default: return { chip: hi ? "अभी असाइन नहीं" : "Not assigned", tone: "warn", reason: hi ? "सभी जुड़े पेशेवरों को बताया गया" : "Everyone matched with her is told" };
   }
 }
@@ -181,5 +184,71 @@ export function eventLabel(e: Pick<CaseEvent, "type" | "detail">, lang: Lang = "
     case "link_confirmed": return hi ? "जुड़ाव की पुष्टि हुई" : "Link confirmed";
     case "link_unlinked": return hi ? "अलग किया गया" : "Separated";
     default: return hi ? "सुलझा" : "Resolved";
+  }
+}
+
+// ---------- priority, reasons, actions ----------
+export const PRIORITY_LABEL: Record<Priority, Pair> = {
+  P1: { en: "Immediate", hi: "तुरंत" }, P2: { en: "Urgent", hi: "ज़रूरी" }, P3: { en: "Soon", hi: "जल्द" }, P4: { en: "Monitor", hi: "निगरानी" },
+};
+export const priorityLabel = (p: Priority, lang: Lang = "en") => pick(PRIORITY_LABEL[p], lang);
+export const WITHIN_LABEL: Record<Priority, Pair> = {
+  P1: { en: "Act within 1 hour", hi: "1 घंटे में कार्रवाई" }, P2: { en: "Act the same day", hi: "उसी दिन कार्रवाई" }, P3: { en: "Act within 48 hours", hi: "48 घंटे में कार्रवाई" }, P4: { en: "Next routine check", hi: "अगली नियमित जाँच" },
+};
+
+type ReasonLike = { key: string; total?: number; n?: number; day?: number };
+/** One line of "Why this priority", with the real numbers. The rules that raise the level say so. */
+export function reasonText(r: ReasonLike, concern: Concern, lang: Lang = "en"): string {
+  const hi = lang === "hi";
+  const history = concern === "HYPERTENSIVE" ? { en: "Pre-eclampsia history", hi: "प्री-एक्लेम्पसिया का इतिहास" } : concern === "HAEMORRHAGE" ? { en: "Heavy-bleeding history", hi: "भारी रक्तस्राव का इतिहास" } : concern === "INFECTION" ? { en: "C-section or diabetes this pregnancy", hi: "सिज़ेरियन या गर्भावस्था में डायबिटीज़" } : { en: "High-risk history", hi: "उच्च-जोखिम इतिहास" };
+  const up = hi ? " (एक स्तर बढ़ाता है)" : " (raises one level)";
+  switch (r.key) {
+    case "safety": return hi ? "सुरक्षा से जुड़ा अलर्ट" : "A safety alert";
+    case "red_unhandled": return hi ? "लाल अलर्ट पर अभी कार्रवाई नहीं हुई" : "Red alert not yet handled";
+    case "red_handled": return hi ? "लाल अलर्ट पर कार्रवाई हुई, पर इलाज की पुष्टि बाकी" : "Red alert handled, but care is not confirmed yet";
+    case "amber_worse": return hi ? "अंबर अलर्ट बिगड़ रहे हैं" : "Amber alerts getting worse";
+    case "epds_high": return hi ? `मूड स्क्रीनिंग ${r.total}: अधिक संभावना` : `Mood screen ${r.total}: probable`;
+    case "epds_mid": return hi ? `मूड स्क्रीनिंग ${r.total}: संभावित` : `Mood screen ${r.total}: possible`;
+    case "amber_single": return hi ? "एक अंबर अलर्ट" : "A single amber alert";
+    case "mood_trend": return hi ? "मन की चिंताएँ बढ़ रही हैं" : "Mood concerns building";
+    case "care_confirmed": return hi ? "कार्रवाई हो चुकी और इलाज की पुष्टि हुई" : "Actions done and care confirmed";
+    case "info_only": return hi ? "सिर्फ़ जानकारी के लिए" : "For information only";
+    case "safety_followup": return hi ? "सुरक्षा का केस तब तक ज़रूरी रहता है जब तक कोई पेशेवर उसे सुलझा न दे" : "A safety case stays Urgent until a professional resolves it";
+    case "no_reply": return (hi ? "फ़ॉलो-अप का जवाब नहीं" : "No reply to the follow-up") + up;
+    case "overdue": return (hi ? "समय-सीमा निकल गई" : "Overdue") + up;
+    case "history": return pick(history, lang) + up;
+    case "sources": return (hi ? `${r.n} स्रोत एक बात कहते हैं` : `${r.n} sources agree`) + up;
+    default: return (hi ? `प्रसव के बाद पहला हफ़्ता: दिन ${r.day}` : `First week after birth: day ${r.day}`) + up;
+  }
+}
+
+export const outcomeLabel = (o: string | null | undefined, lang: Lang = "en") => (o && o in OUTCOME_LABEL ? pick(OUTCOME_LABEL[o as Outcome], lang) : "");
+
+type ActionLike = { type: string; outcome: string | null; by?: string; detail?: Record<string, unknown> };
+/** A recorded action as one sentence for the timeline: who did what, with the fixed outcome. */
+export function actionSentence(a: ActionLike, lang: Lang = "en"): string {
+  const who = a.by || (lang === "hi" ? "एक पेशेवर" : "A professional");
+  const hi = lang === "hi";
+  const fam = String(a.detail?.familyName ?? (hi ? "परिवार के सदस्य" : "a family member"));
+  switch (a.type) {
+    case "call": return `${who}: ${outcomeLabel(a.outcome, lang)}`;
+    case "family_message": return hi ? `${who} ने ${fam} को 'कृपया कॉल करें' संदेश भेजा` : `${who} sent ${fam} a 'please call' message`;
+    case "book_session": return hi ? `${who} ने सत्र बुक किया` : `${who} booked a session`;
+    case "refer": return hi ? `${who} ने विशेषज्ञ के पास भेजा` : `${who} referred her to a specialist`;
+    case "monitor": return hi ? `${who} नज़र रख रहे हैं` : `${who} is keeping an eye on it`;
+    case "resolve": return hi ? `${who} ने केस सुलझाया: डॉक्टर ने देखा` : `${who} resolved the case: seen by a doctor`;
+    case "acknowledge": return hi ? `${who} ने केस देखा` : `${who} acknowledged the case`;
+    default: return hi ? `${who} ने केस संभाला` : `${who} took over the case`;
+  }
+}
+
+/** What happened to the case that is not an alert: shown in the timeline between the alerts. */
+export function caseEventSentence(e: { type: string; detail: Record<string, unknown> }, lang: Lang = "en"): string | null {
+  const hi = lang === "hi";
+  switch (e.type) {
+    case "escalated": return e.detail.level === 3 ? (hi ? "एडमिन डेस्क को बताया गया" : "Escalated to the admin desk") : (hi ? "ऑन-कॉल बैकअप को बताया गया" : "Escalated to the on-call backup");
+    case "priority_changed": return e.detail.to ? (hi ? `प्राथमिकता बदली: ${e.detail.from ? priorityLabel(e.detail.from as Priority, lang) + " → " : ""}${priorityLabel(e.detail.to as Priority, lang)}` : `Priority changed: ${e.detail.from ? priorityLabel(e.detail.from as Priority) + " → " : ""}${priorityLabel(e.detail.to as Priority)}`) : null;
+    case "family_asked": return hi ? `${e.detail.familyName ?? "परिवार के सदस्य"} को बताने के बारे में माँ से पूछा गया` : `Asked her whether to tell ${e.detail.familyName ?? "a family member"}`;
+    default: return null;
   }
 }

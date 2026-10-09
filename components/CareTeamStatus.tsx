@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HeartHandshake } from "lucide-react";
 import { useApp } from "@/lib/store";
@@ -27,7 +28,7 @@ export function CareTeamStatus() {
   return (
     <section role="status" aria-label={tr("Your care team")} className="flex items-start gap-3 rounded-3xl border border-ok/40 bg-ok/10 p-5">
       <HeartHandshake className="mt-0.5 h-6 w-6 shrink-0 text-ok" aria-hidden />
-      <div><p className="font-serif text-xl text-plum-900">{tr("Your care team is looking into this.")}</p><p className="text-sm text-ink-muted">{tr("They will contact you.")}</p></div>
+      <div><p className="font-serif text-xl text-plum-900">{tr("Your care team is looking into this.")}</p><p className="text-sm text-ink-muted">{tr("They will contact you.")}</p><Link href="/care-team" className="mt-1 inline-block text-sm font-semibold text-primary underline underline-offset-4">{tr("See what they have done")}</Link></div>
     </section>
   );
 }

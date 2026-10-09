@@ -16,7 +16,16 @@ export type Ctx = {
 const URGENT_FLAGS = ["q10", "red", "selfharm"];
 
 /** Open Immediate and Urgent items per professional. Until cases exist (next challenge) this is the open flags of the mothers matched with them. */
+let proCache: { at: number; list: ProLoad[] } | null = null;   // opening several cases in a row (the seed, the storm) asks the same question each time
+
 export async function loadPros(admin: SupabaseClient): Promise<ProLoad[]> {
+  if (proCache && Date.now() - proCache.at < 8000) return proCache.list;
+  const list = await loadProsFresh(admin);
+  if (list.length) proCache = { at: Date.now(), list };
+  return list;
+}
+
+async function loadProsFresh(admin: SupabaseClient): Promise<ProLoad[]> {
   const { data: pros, error } = await admin.from("pros").select("id, specialty, on_duty, is_on_call, max_open_cases, profiles(full_name)");
   if (error || !pros) return [];
   const [{ data: links }, { data: flags }] = await Promise.all([
