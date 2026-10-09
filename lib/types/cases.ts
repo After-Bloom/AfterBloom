@@ -84,7 +84,7 @@ export type Specialty = "psychologist" | "gynaecologist" | "paediatrician" | "la
 /** One professional and how busy they are. openLoad counts open Immediate and Urgent items. */
 export type ProLoad = { id: string; name: string; specialty: Specialty | null; onDuty: boolean; isOnCall: boolean; maxOpen: number; openLoad: number };
 
-export type RoutingKind = "returning" | "preferred" | "new" | "on_call" | "none";
+export type RoutingKind = "returning" | "preferred" | "new" | "on_call" | "taken_over" | "none";
 export type RoutingResult = {
   proId: string | null;
   proName: string;
@@ -93,11 +93,13 @@ export type RoutingResult = {
   sessions: number;
   /** facts for the card's reason line; the words come from lib/labels.ts */
   note?: "preferred_off_duty";
+  /** when a professional took the case over (kind "taken_over") */
+  at?: string;
 };
 
 // ---------- cases ----------
 export type CaseStatus = "open" | "monitoring" | "resolved";
-export type CaseEventType = "opened" | "reopened" | "severity_raised" | "link_confirmed" | "link_unlinked" | "resolved";
+export type CaseEventType = "opened" | "reopened" | "severity_raised" | "link_confirmed" | "link_unlinked" | "resolved" | "action" | "priority_changed" | "escalated" | "taken_over" | "family_asked";
 
 /** One case per mother, subject and concern: every related alert attaches to it. */
 export type Case = {
@@ -119,6 +121,12 @@ export type Case = {
   lastSignalAt: string;
   resolvedAt: string | null;
   reopenedCount: number;
+  /** when it reached its current priority (the due time counts from here), the escalation step it is on, and the last time anyone acted */
+  prioritySince: string | null;
+  escalationLevel: number;
+  lastActionAt: string | null;
+  /** why it has this priority: the rules that fired, as facts (see lib/workflow/priority.ts) */
+  priorityReasons: { key: string; [k: string]: unknown }[];
 };
 
 export type CaseEvent = { id: number; caseId: string; at: string; type: CaseEventType; actorRole: string | null; actorId: string | null; detail: Record<string, unknown> };

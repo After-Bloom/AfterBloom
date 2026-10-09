@@ -9,6 +9,7 @@ import { Segmented } from "@/components/ui";
 import { usePro } from "@/components/pro/ProProvider";
 import { AlertRow, useSignalTitle } from "@/components/pro/AlertRow";
 import { CaseCard } from "@/components/pro/CaseCard";
+import { DemoControls } from "@/components/pro/DemoControls";
 import { rise, stagger } from "@/lib/motion";
 import type { PatientSignals, Signal } from "@/lib/types/cases";
 
@@ -50,7 +51,8 @@ export default function RelatedAlerts({ meId, patientId }: { meId: string; patie
   const total = shown.reduce((a, p) => a + p.signals.length, 0);
   const caseCount = shown.reduce((a, p) => a + p.cases.length, 0);
   const held = shown.reduce((a, p) => a + p.signals.filter((x) => !x.notified).length, 0);
-  const toConfirm = shown.reduce((a, p) => a + p.signals.filter((x) => x.linkStatus === "suggested").length, 0);
+  const overdue = shown.reduce((a, p) => a + p.cases.filter((c) => c.status !== "resolved" && c.priority !== "P4" && c.dueBy && new Date(c.dueBy).getTime() < Date.now()).length, 0);
+  const openCases = shown.reduce((a, p) => a + p.cases.filter((c) => c.status !== "resolved").length, 0);
   const casesReady = (sig.data ?? []).some((p) => p.cases.length > 0) || (sig.data ?? []).every((p) => p.signals.length === 0);
 
   if (sig.problem === "not-ready") return <div role="status" className="card text-ink-muted">{tr("Related alerts need the latest database update (migration 007). Ask the administrator to run it, then refresh.")}</div>;
@@ -62,10 +64,11 @@ export default function RelatedAlerts({ meId, patientId }: { meId: string; patie
 
   return (
     <div className="space-y-4">
+      {!patientId && <DemoControls onChange={() => void sig.reload()} onReplayStart={() => { setView("individual"); setWho("care"); }} />}
       {/* live counts: nothing here is typed in, they are worked out from the alerts below */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[[total, "Alerts received"], [caseCount, "Cases"], [held, "Notifications held back"], [toConfirm, "To confirm"]].map(([n, l]) => (
-          <div key={l as string} className="card !p-4"><div className="font-serif text-3xl leading-none text-plum-800">{n as number}</div><div className="mt-1 text-xs font-semibold text-ink-muted">{tr(l as string)}</div></div>
+        {[[total, "Alerts received", ""], [openCases, "Open cases", ""], [held, "Notifications held back", ""], [overdue, "Overdue", overdue ? "text-danger" : ""]].map(([n, l, tone]) => (
+          <div key={l as string} className="card !p-4"><div className={`font-serif text-3xl leading-none ${(tone as string) || "text-plum-800"}`}>{n as number}</div><div className="mt-1 text-xs font-semibold text-ink-muted">{tr(l as string)}</div></div>
         ))}
       </div>
 
@@ -91,7 +94,7 @@ export default function RelatedAlerts({ meId, patientId }: { meId: string; patie
 
               {grouped ? (
                 <ul className="grid gap-3 md:grid-cols-2">
-                  {[...p.cases].sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved") || (a.severityPeak === b.severityPeak ? b.lastSignalAt.localeCompare(a.lastSignalAt) : a.severityPeak === "red" ? -1 : 1)).map((c) => (
+                  {[...p.cases].sort((a, b) => Number(a.status === "resolved") - Number(b.status === "resolved") || (a.priority ?? "P4").localeCompare(b.priority ?? "P4") || b.lastSignalAt.localeCompare(a.lastSignalAt)).map((c) => (
                     <li key={c.id}><CaseCard c={c} signals={p.signals} me={me} /></li>
                   ))}
                 </ul>

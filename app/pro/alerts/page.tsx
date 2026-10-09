@@ -16,7 +16,7 @@ export default function Alerts() {
   const { auth } = useApp();
   const tr = useTr();
   const pd = usePro();
-  const [tab, setTab] = useState("callbacks");
+  const [tab, setTab] = useState("queue");
 
   const withCallbacks = useMemo(() => pd.rows
     .map((r) => ({ r, open: r.flags.filter((f) => !f.resolved).sort((a, b) => Number(URGENT.includes(b.kind)) - Number(URGENT.includes(a.kind)) || a.dueAt.localeCompare(b.dueAt)) }))
@@ -29,8 +29,8 @@ export default function Alerts() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
-      <PageHead title="Alerts" sub="Callbacks waiting for you, and how a mother's alerts fit together." tag="Sample profile" />
-      <Tabs value={tab} onChange={setTab} tabs={[{ id: "callbacks", label: tr("Callbacks ({n})", { n: total }) }, { id: "related", label: "Related alerts" }]} />
+      <PageHead title="Alerts" sub="One card per case, most urgent first, each with the one thing to do next." tag="Sample profile" />
+      <Tabs value={tab} onChange={setTab} tabs={[{ id: "queue", label: "Action queue" }, { id: "callbacks", label: tr("Callbacks ({n})", { n: total }) }]} />
 
       {tab === "callbacks" && (
         <div className="space-y-4">
@@ -70,7 +70,7 @@ export default function Alerts() {
         </div>
       )}
 
-      {tab === "related" && <RelatedAlerts meId={auth.userId ?? ""} />}
+      {tab === "queue" && <RelatedAlerts meId={auth.userId ?? ""} />}
     </div>
   );
 }

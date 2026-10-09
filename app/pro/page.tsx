@@ -11,6 +11,8 @@ import { rise, stagger } from "@/lib/motion";
 import { usePro } from "@/components/pro/ProProvider";
 import { CallButton, TONE, URGENT, reasonsOf, urgency } from "@/components/pro/parts";
 import { caseTitle } from "@/lib/labels";
+import { DueCountdown, PriorityChip } from "@/components/pro/Priority";
+import type { Priority } from "@/lib/workflow/priority";
 
 /** The dashboard: who needs you right now, one card per patient. Everything else lives under Patients, Alerts, Sessions and Audit log. */
 export default function ProHome() {
@@ -19,7 +21,7 @@ export default function ProHome() {
   const pd = usePro();
 
   const rows = useMemo(() => [...pd.rows].sort((a, b) => urgency(b) - urgency(a) || a.name.localeCompare(b.name)), [pd.rows]);
-  const openCases = (id: string) => (pd.sig.data?.find((p) => p.id === id)?.cases ?? []).filter((c) => c.status !== "resolved").sort((a, b) => Number(b.severityPeak === "red") - Number(a.severityPeak === "red"));
+  const openCases = (id: string) => (pd.sig.data?.find((p) => p.id === id)?.cases ?? []).filter((c) => c.status !== "resolved").sort((a, b) => (a.priority ?? "P4").localeCompare(b.priority ?? "P4"));
   const needing = rows.filter((r) => urgency(r) >= 2 || reasonsOf(r).length > 0 || openCases(r.id).length > 0);
   const calm = rows.filter((r) => !needing.includes(r));
   const urgentCount = rows.filter((r) => urgency(r) === 3).length;
@@ -70,7 +72,7 @@ export default function ProHome() {
                     {openCases(r.id).length > 0 && (
                       <ul className="mt-2 space-y-1" aria-label={tr("Open cases")}>
                         {openCases(r.id).slice(0, 3).map((c) => (
-                          <li key={c.id}><Link href={`/pro/cases/${c.id}`} className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline-offset-4 hover:underline"><span className={`h-2.5 w-2.5 rounded-full ${c.severityPeak === "red" ? "bg-danger" : "bg-warn"}`} aria-hidden />{caseTitle(c.concern, s.lang)}<span className="font-normal text-ink-muted">· {tr("{n} alerts", { n: (pd.sig.data?.find((p) => p.id === r.id)?.signals ?? []).filter((x) => x.caseId === c.id).length })}</span></Link></li>
+                          <li key={c.id} className="flex flex-wrap items-center gap-2"><PriorityChip priority={c.priority as Priority | null} /><Link href={`/pro/cases/${c.id}`} className="text-sm font-semibold text-primary underline-offset-4 hover:underline">{caseTitle(c.concern, s.lang)}</Link><span className="text-xs text-ink-muted">· {tr("{n} alerts", { n: (pd.sig.data?.find((p) => p.id === r.id)?.signals ?? []).filter((x) => x.caseId === c.id).length })}</span><DueCountdown dueBy={c.dueBy} priority={c.priority as Priority | null} /></li>
                         ))}
                       </ul>
                     )}

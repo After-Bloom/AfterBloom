@@ -9,15 +9,18 @@ export const maxDuration = 60;
 
 const TABLES = ["hospitals", "circles", "profiles", "mothers", "pros", "pro_patients", "asha_assignments", "family_members", "checkins", "symptom_logs", "epds_results", "flags", "alerts", "bookings", "audit_log",
   "baby_vaccines", "baby_growth", "baby_milestones", "benefit_steps", "night_shifts", "partner_screens", "circle_members", "posts", "post_authors", "mod_queue", "circle_events", "asha_visits", "weekly_reports", "clinical_config", "consent_log"];
+// added by later updates: backed up when they exist, skipped (not an error) before the update has been run
+const OPTIONAL = ["signals", "cases", "case_events", "case_views", "case_actions", "care_preferences", "consent_requests"];
 
 export async function GET(req: Request) {
   if (req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: "not allowed" }, { status: 401 });
   const admin = adminClient();
   const dump: Record<string, unknown[]> = {};
-  for (const t of TABLES) {
+  for (const t of [...TABLES, ...OPTIONAL]) {
     const rows: unknown[] = [];
     for (let from = 0; ; from += 1000) {
       const { data, error } = await admin.from(t).select("*").range(from, from + 999);
+      if (error && OPTIONAL.includes(t)) break;
       if (error) return NextResponse.json({ error: `${t}: ${error.message}` }, { status: 500 });
       rows.push(...(data ?? []));
       if ((data?.length ?? 0) < 1000) break;

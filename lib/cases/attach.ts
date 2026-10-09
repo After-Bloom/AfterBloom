@@ -22,6 +22,8 @@ export const mapCase = (r: any): Case => ({
   id: r.id, motherId: r.mother_id, subject: r.subject, concern: r.concern, title: r.title, status: r.status, severityPeak: r.severity_peak, severityCurrent: r.severity_current,
   priority: r.priority ?? null, dueBy: r.due_by ?? null, ownerProId: r.owner_pro_id ?? null, ownerReason: r.owner_reason ?? null, acknowledgedAt: r.acknowledged_at ?? null,
   triggerSignalId: r.trigger_signal_id ?? null, openedAt: r.opened_at, lastSignalAt: r.last_signal_at, resolvedAt: r.resolved_at ?? null, reopenedCount: r.reopened_count ?? 0,
+  prioritySince: r.priority_since ?? null, escalationLevel: r.escalation_level ?? 0, lastActionAt: r.last_action_at ?? null,
+  priorityReasons: Array.isArray(r.priority_reasons) ? r.priority_reasons : [],
 });
 
 async function event(admin: SupabaseClient, caseId: string, type: string, detail: Record<string, unknown> = {}, actor?: { role: string; id: string }, at?: string) {

@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { SYMPTOMS } from "../symptoms";
 import { mapSignal, recordAll as recordAllCore, recordSignal as recordSignalCore, shouldNotify, type Hooks, type Recorded } from "../signals/record";
 import { attachSignal, raiseSignal, type OwnerFn } from "../cases/attach";
+import { recomputeCase } from "../workflow/engine";
 import { loadContext, ownerOf } from "./routingCore";
 import { visibleSignals } from "../signals/access";
 import { deriveFromCheckin, deriveFromEpds, deriveFromSymptomLog, loopSignal, type SymptomLookup } from "../signals/derive";
@@ -27,8 +28,9 @@ export const ownerFn = (admin: SupabaseClient): OwnerFn => async (motherId, conc
 
 /** Every saved alert is also put into its case (opening or reopening one if needed). If the cases table is missing, the alert is still recorded. */
 const caseHooks = (admin: SupabaseClient): Hooks => ({
-  created: (s) => attachSignal(admin, s, ownerFn(admin)),
-  raised: (s) => raiseSignal(admin, s),
+  // after the alert joins its case, the case's priority is worked out again (as of the moment the alert happened)
+  created: async (s) => { const c = await attachSignal(admin, s, ownerFn(admin)); if (c) await recomputeCase(admin, c.id, { now: new Date(s.observedAt).getTime() }); },
+  raised: async (s) => { await raiseSignal(admin, s); if (s.caseId) await recomputeCase(admin, s.caseId, { now: new Date(s.observedAt).getTime() }); },
 });
 export const recordSignal = (admin: SupabaseClient, input: SignalInput) => recordSignalCore(admin, input, caseHooks(admin));
 export const recordAll = (admin: SupabaseClient, inputs: SignalInput[]) => recordAllCore(admin, inputs, caseHooks(admin));

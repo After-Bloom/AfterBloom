@@ -47,6 +47,7 @@ export const DEMO_STAFF = {
   asha: { email: "asha@demo.afterbloom.app", name: "Sunita Devi (ASHA)", role: "asha" },
   admin: { email: "admin@demo.afterbloom.app", name: "AfterBloom Admin", role: "admin" },
   rohan: { email: "rohan@demo.afterbloom.app", name: "Rohan Verma", role: "family" },
+  kamla: { email: "kamla@demo.afterbloom.app", name: "Kamla Verma", role: "family" },
 } as const;
 
 // Opening conversation in the demo circle (alias, topic, text, hoursAgo, anon?)

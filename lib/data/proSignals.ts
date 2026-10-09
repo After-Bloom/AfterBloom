@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PatientSignals } from "../types/cases";
 
 /**
@@ -11,7 +11,10 @@ export function useProSignals(enabled: boolean) {
   const [me, setMe] = useState("");
   const [problem, setProblem] = useState<"" | "not-ready" | "error">("");
 
+  const busy = useRef(false);   // never start a new request while the last one is still running
   const load = useCallback(async () => {
+    if (busy.current) return;
+    busy.current = true;
     try {
       const res = await fetch("/api/signals", { cache: "no-store" });
       if (res.status === 503) return setProblem("not-ready");
@@ -19,12 +22,13 @@ export function useProSignals(enabled: boolean) {
       const j = await res.json();
       setMe(j.me ?? ""); setData(j.patients ?? []); setProblem("");
     } catch { setProblem("error"); }
+    finally { busy.current = false; }
   }, []);
 
   useEffect(() => {
     if (!enabled) return;
     void load();
-    const t = setInterval(() => { if (document.visibilityState === "visible") void load(); }, 5000);
+    const t = setInterval(() => { if (document.visibilityState === "visible") void load(); }, 6000);
     return () => clearInterval(t);
   }, [enabled, load]);
 

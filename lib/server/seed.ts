@@ -4,8 +4,9 @@ import { DEMO_HOSPITAL, DEMO_MOTHERS, DEMO_POSTS, DEMO_PROS, DEMO_STAFF } from "
 import { encrypt } from "./crypto";
 import { assignCircle, assignPro } from "./onboard";
 import { loadContext, ownerOf } from "./routingCore";
-import { recordAll, recordSignal, symptomLookup } from "./signals";
-import { deriveFromEpds, deriveFromSymptomLog, derivePartnerScreen } from "../signals/derive";
+import { recordAll } from "./signals";
+import { seedStory } from "./demoStory";
+import { deriveFromEpds } from "../signals/derive";
 
 const DAY = 86400000;
 // every write is checked: a seed that silently half-works is worse than one that stops with a clear message
@@ -132,39 +133,16 @@ export async function seedDemo(admin: SupabaseClient, password: string) {
   await admin.from("care_preferences").insert([{ mother_id: priya, specialty: "psychologist", pro_id: proIds.drrao, set_by: "booking" }, { mother_id: priya, specialty: "gynaecologist", pro_id: proIds.mehta, set_by: "booking" }]);
   log.push("continuity of care: Priya has seen Dr Rao (2 sessions) and Dr Mehta (1); Kavya and Anjali were matched by the routing rules");
 
-  // ---- the related-alerts story, run through the real linking rules ----
-  // Every time is relative to now, so it looks the same whenever a judge opens it. Nothing is hand-labelled: each alert is recorded by
-  // recordSignal(), so the "repeat", "follow-up", "also reported" and "possibly related" labels on screen come from the real rules.
-  const ago = (h: number) => new Date(Date.now() - h * 3600000).toISOString();
-  const rec = (h: number, source: "checkin" | "symptom_checker", code: string, concern: "HYPERTENSIVE", severity: "amber" | "red", value: Record<string, number> | null = null) =>
-    recordSignal(admin, { motherId: priya, subject: "mother", source, code, concern, severity, value, observedAt: ago(h), originTable: "checkins", originId: crypto.randomUUID() });
-  const saveLog = async (mother: string, h: number, level: "RED" | "AMBER", labels: string[]) => {
-    const { data } = await admin.from("symptom_logs").insert({ mother_id: mother, level, labels, created_at: ago(h) }).select("id, level, labels, created_at").single();
-    if (data) await recordAll(admin, deriveFromSymptomLog(mother, data as any, symptomLookup));
-  };
-
-  // partner screening by Rohan (30 hours ago): joins her mood concern
-  const { data: ps } = await admin.from("partner_screens").insert({ mother_id: priya, by_user: staff.rohan, yes_count: 4, answers: [1, 1, 1, 1, 0, 0], created_at: ago(30) }).select("id, created_at").single();
-  if (ps) await recordAll(admin, derivePartnerScreen(priya, { id: ps.id, yes: 4, total: 6, created_at: ps.created_at }));
-
-  await rec(26, "checkin", "bp_raised", "HYPERTENSIVE", "amber", { sys: 142, dia: 90 });                 // morning reading, no headache: opens the blood pressure concern
-  const red = await rec(13, "checkin", "bp_raised", "HYPERTENSIVE", "red", { sys: 148, dia: 94 });        // evening, now with a headache: amber to red, so it tells the care team again
-  await rec(13, "checkin", "headache", "HYPERTENSIVE", "amber");
-  await saveLog(priya, 12.6, "RED", ["Severe headache with blurred vision", "Headache"]);                 // reported again in the symptom checker: also reported, held back
-  await saveLog(priya, 12.2, "AMBER", ["Dizzy or faint when standing"]);                                  // dizziness (bleeding) with raised BP: possibly related, a clinician confirms
-  await recordSignal(admin, { motherId: priya, subject: "mother", source: "care_loop", code: "loop_no_reply", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(8), originTable: "care_loops", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true, value: { askedAt: ago(10) } }); // no reply to "did you get care?"
-  await rec(2, "checkin", "bp_raised", "HYPERTENSIVE", "red", { sys: 152, dia: 96 });                       // raised again: a repeat
-  await recordSignal(admin, { motherId: priya, subject: "mother", source: "callback", code: "callback_overdue", concern: "HYPERTENSIVE", severity: "red", observedAt: ago(1), originTable: "flags", originId: crypto.randomUUID(), followUpOf: red.signal?.id ?? null, forceNotify: true });
-  await saveLog(priya, 5, "AMBER", ["Yellowish skin or eyes"]);                                            // the baby: a separate concern
-
-  // Anjali (day 5): fever with a painful red breast, one infection concern with two signs
-  await saveLog(mothers.anjali, 3, "AMBER", ["Fever", "Painful red breast"]);
-  log.push("Priya: her alerts from the last two days were run through the real linking rules (repeat, follow-up, also reported, possibly related, a separate baby concern)");
+  // ---- the related-alerts story, run through the real linking rules (also used by "Reset demo") ----
+  await seedStory(admin, { priya: mothers.priya, anjali: mothers.anjali, rohan: staff.rohan });
+  log.push("Priya: her alerts from the last two days were run through the real linking rules, grouped into cases and given a priority (repeat, follow-up, also reported, possibly related, a separate baby case)");
 
   // ---- Priya's family: Rohan ----
   await admin.from("family_members").delete().eq("mother_id", mothers.priya);
   await must("profiles upsert", admin.from("profiles").upsert({ id: staff.rohan, role: "family", full_name: DEMO_STAFF.rohan.name, lang: "en", city: "Delhi", hospital_id: DEMO_HOSPITAL, is_demo: true }));
   await must("family_members insert", admin.from("family_members").insert({ mother_id: mothers.priya, user_id: staff.rohan, name: "Rohan", relation: "Husband", status: "active", sees_alerts: true, sees_trends: false, sees_weekly: true }));
+  // her mother-in-law has NOT been allowed alerts: the case page shows her greyed out with the reason, and offers "Ask Priya"
+  await must("family_members insert", admin.from("family_members").insert({ mother_id: mothers.priya, user_id: staff.kamla, name: "Kamla", relation: "Mother-in-law", status: "active", sees_alerts: false, sees_trends: false, sees_weekly: false }));
 
   // ---- one circle for everyone, mentored by the moderator ----
   const birthMonth = isoDay(daysAgo(9));
