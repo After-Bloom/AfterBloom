@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "../supabase/client";
 import { useApp, daysSince, Checkin, EpdsResult, Flag, SymptomLog } from "../store";
 import { mapCheckin, mapFlag } from "./load";
+import { effectiveShares } from "../consent";
 import type { Risk } from "../risk";
 
 export type PatientRow = {
@@ -29,7 +30,7 @@ export function useProData() {
     const sb = supabase();
     const since = new Date(Date.now() - 21 * 86400000).toISOString();
     const sinceDay = since.slice(0, 10);
-    const pp = await sb.from("pro_patients").select("mother_id, mothers(baby_name, birth_date, delivery, phone, consent_share_pro, profiles!mothers_id_fkey(full_name))").eq("pro_id", uid);
+    const pp = await sb.from("pro_patients").select("mother_id, mothers(baby_name, birth_date, delivery, phone, consent_share_pro, sharing_paused_until, profiles!mothers_id_fkey(full_name))").eq("pro_id", uid);
     if (pp.error) { setError(true); setLoading(false); return; }
     const ids = (pp.data ?? []).map((r: any) => r.mother_id);
     const none = Promise.resolve({ data: [] as any[], error: null });
@@ -48,7 +49,7 @@ export function useProData() {
       const mo = r.mothers;
       return {
         id: r.mother_id, name: mo?.profiles?.full_name ?? "", babyName: mo?.baby_name ?? "", day: daysSince(mo?.birth_date ?? new Date().toISOString()), birth: mo?.birth_date ?? "", delivery: mo?.delivery ?? "",
-        phone: mo?.phone ?? null, shares: !!mo?.consent_share_pro,
+        phone: mo?.phone ?? null, shares: effectiveShares(!!mo?.consent_share_pro, mo?.sharing_paused_until ?? null),
         flags: by(fl.data, r.mother_id, mapFlag),
         epds: by(ep.data, r.mother_id, (e) => ({ date: e.created_at, total: e.total, band: e.band, selfHarm: e.self_harm })),
         checkins: by(ci.data, r.mother_id, mapCheckin),

@@ -1,15 +1,45 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { AnimatePresence } from "motion/react";
-import { BellOff, ChevronDown, Info, Link2, Link2Off, OctagonAlert, Sparkles, TriangleAlert } from "lucide-react";
+import { BellOff, ChevronDown, Eye, Info, Link2, Link2Off, Loader2, OctagonAlert, Sparkles, TriangleAlert } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { useTr } from "@/lib/i18n";
 import { bySymptomId } from "@/lib/symptoms";
 import { eventLabel, notifyLabel, relationLabel, severityLabel, signalTitle, sourceLabel, whyLinked } from "@/lib/labels";
 import { formatTime } from "@/lib/time";
 import { rise, spring } from "@/lib/motion";
+import { showToast } from "@/components/Toast";
 import type { CaseEvent, Severity, Signal } from "@/lib/types/cases";
+
+const REVEAL_MS = 60000;
+
+/** A3: the "Show" control for one blurred mood/EPDS/partner-screen value. Calls /api/reveal (consent checked again, logged),
+ * then shows the real value for 60 seconds before blurring itself again. */
+function RevealButton({ sig, onRevealed }: { sig: Pick<Signal, "id">; onRevealed: (value: Signal["value"]) => void }) {
+  const tr = useTr();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(false);
+  const show = async () => {
+    setBusy(true); setErr(false);
+    try {
+      const res = await fetch("/api/reveal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ signalId: sig.id }) });
+      if (!res.ok) { setErr(true); return; }
+      const j = await res.json();
+      onRevealed(j.value ?? null);
+      showToast(tr("View logged · Priya can see this"));
+    } catch { setErr(true); }
+    finally { setBusy(false); }
+  };
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <button type="button" className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-bold text-primary hover:bg-primary/20" disabled={busy} onClick={show}>
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Eye className="h-3.5 w-3.5" aria-hidden />}{tr("Show")}
+      </button>
+      {err && <span className="text-xs font-semibold text-danger">{tr("Could not show it. Try again.")}</span>}
+    </span>
+  );
+}
 
 export const SEV: Record<Severity, { icon: typeof OctagonAlert; text: string; bg: string; border: string }> = {
   red: { icon: OctagonAlert, text: "text-danger", bg: "bg-danger/10", border: "border-danger/50" },
@@ -53,6 +83,16 @@ export function AlertRow({ sig, repeats = [], parentTitle, events = [], isNew, i
   const lang = s.lang;
   const title = useSignalTitle();
   const [open, setOpen] = useState(false);
+  const [revealed, setRevealed] = useState<Signal["value"] | null>(null);   // A3: the real value, shown for 60s after "Show"
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (hideTimer.current) clearTimeout(hideTimer.current); }, []);
+  const onRevealed = (value: Signal["value"]) => {
+    setRevealed(value);
+    if (hideTimer.current) clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => setRevealed(null), REVEAL_MS);
+  };
+  const hideNow = () => { if (hideTimer.current) clearTimeout(hideTimer.current); setRevealed(null); };
+  const shown = sig.blurred && revealed !== null ? { ...sig, value: revealed } : sig;
   const x = SEV[sig.severity];
   const waiting = sig.linkStatus === "suggested";
   const confirmed = sig.relation === "POSSIBLY_RELATED" && sig.linkStatus === "confirmed";
@@ -63,10 +103,15 @@ export function AlertRow({ sig, repeats = [], parentTitle, events = [], isNew, i
       <div className="flex flex-wrap items-start gap-x-3 gap-y-1">
         <SeverityBadge severity={sig.severity} />
         <div className="min-w-0 flex-1">
-          <p className="font-semibold">
-            {title(sig)}
-            {sig.subject === "baby" && <span className="ml-2 rounded-full bg-plum-100 px-2 py-0.5 text-xs font-bold text-plum-800">{tr("Baby")}</span>}
-            {isNew && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-primary-fill px-2 py-0.5 text-xs font-bold text-primary-on"><Sparkles className="h-3 w-3" aria-hidden />{tr("New")}</span>}
+          <p className="flex flex-wrap items-center gap-2 font-semibold">
+            {title(shown)}
+            {sig.blurred && (revealed === null ? <RevealButton sig={sig} onRevealed={onRevealed} /> : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-muted">
+                {tr("Hides again soon")}<button type="button" className="font-bold text-primary underline underline-offset-2" onClick={hideNow}>{tr("Hide")}</button>
+              </span>
+            ))}
+            {sig.subject === "baby" && <span className="rounded-full bg-plum-100 px-2 py-0.5 text-xs font-bold text-plum-800">{tr("Baby")}</span>}
+            {isNew && <span className="inline-flex items-center gap-1 rounded-full bg-primary-fill px-2 py-0.5 text-xs font-bold text-primary-on"><Sparkles className="h-3 w-3" aria-hidden />{tr("New")}</span>}
           </p>
           <p className="text-xs text-ink-muted">{sourceLabel(sig.source, lang)} · {formatTime(sig.observedAt, lang)}</p>
         </div>

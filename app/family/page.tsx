@@ -4,7 +4,6 @@ import { Check, Copy, Loader2, MessageCircle, Trash2, UserPlus } from "lucide-re
 import { useApp } from "@/lib/store";
 import { useActions } from "@/lib/actions";
 import { PageHead, Toggle, fmtTime } from "@/components/ui";
-import { NightPlanner } from "@/components/NightPlanner";
 import { useTr } from "@/lib/i18n";
 
 const RELATIONS = ["Husband / partner", "My mother", "Mother-in-law", "Other"];
@@ -67,10 +66,6 @@ export default function FamilyCircle() {
 
       <section className="card">
         <Toggle on={s.consent.emergencyAlert} onChange={(v) => act.setConsent({ emergencyAlert: v })} label="Alert my family on a RED result" hint="Only the family you invited who have safety alerts switched on. The message never says what is wrong." />
-      </section>
-
-      <section className="card space-y-2" aria-labelledby="night-h"><h2 id="night-h" className="font-serif text-xl">{tr("Night-feed planner")}</h2>
-        <NightPlanner shifts={s.shifts} me={s.mother.name.split(" ")[0]} owner={s.mother.name} onToggle={(d, sl, who) => act.claimShift(d, sl, who)} />
       </section>
 
       {s.alerts.filter((a) => a.kind === "support").length > 0 && (

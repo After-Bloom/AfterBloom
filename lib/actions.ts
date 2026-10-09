@@ -84,7 +84,8 @@ export function useActions() {
         return r as { band: "low" | "possible" | "probable"; selfHarm: boolean };
       },
 
-      async setConsent(patch: Partial<State["consent"]>) {
+      /** Saves a consent choice and returns the new consent_log row's id, so the screen can show a receipt ("Saved · Receipt #..."). */
+      async setConsent(patch: Partial<State["consent"]>): Promise<string | undefined> {
         set((p) => ({ ...p, consent: { ...p.consent, ...patch } }));
         if (!uid || !isMother) return;
         const col: Record<string, string> = { emergencyAlert: "consent_emergency_alert", shareWithPro: "consent_share_pro", familyNote: "consent_family_note", cloudMatch: "consent_cloud_match", emergencyContact: "emergency_contact_name", emergencyPhone: "emergency_contact_phone", sms: "consent_sms" };
@@ -93,7 +94,27 @@ export function useActions() {
         const { error } = await sb.from("mothers").update(row).eq("id", uid);
         if (error) fail("Could not save that choice", error);
         const log = Object.entries(patch).filter(([k, v]) => typeof v === "boolean" && col[k]).map(([k, v]) => ({ user_id: uid, key: k, value: v as boolean }));
-        if (log.length) await sb.from("consent_log").insert(log);
+        if (!log.length) return;
+        const { data } = await sb.from("consent_log").insert(log).select("id");
+        return data?.at(-1)?.id as string | undefined;
+      },
+      /** B8: pause all sharing with her care team for a while (or until she resumes). Red and safety alerts are never paused. */
+      async pauseSharing(hours: number | "forever"): Promise<string | undefined> {
+        const until = hours === "forever" ? "3000-01-01T00:00:00.000Z" : new Date(Date.now() + hours * 3600000).toISOString();
+        set((p) => ({ ...p, consent: { ...p.consent, sharingPausedUntil: until } }));
+        if (!uid || !isMother) return;
+        const { error } = await sb.from("mothers").update({ sharing_paused_until: until }).eq("id", uid);
+        if (error) fail("Could not pause sharing", error);
+        const { data } = await sb.from("consent_log").insert({ user_id: uid, key: "sharingPaused", value: true }).select("id").single();
+        return data?.id as string | undefined;
+      },
+      async resumeSharing(): Promise<string | undefined> {
+        set((p) => ({ ...p, consent: { ...p.consent, sharingPausedUntil: null } }));
+        if (!uid || !isMother) return;
+        const { error } = await sb.from("mothers").update({ sharing_paused_until: null }).eq("id", uid);
+        if (error) fail("Could not resume sharing", error);
+        const { data } = await sb.from("consent_log").insert({ user_id: uid, key: "sharingPaused", value: false }).select("id").single();
+        return data?.id as string | undefined;
       },
       async setNeutral(v: boolean) {
         set((p) => ({ ...p, neutralNotif: v }));

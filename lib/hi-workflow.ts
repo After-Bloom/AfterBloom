@@ -17,6 +17,8 @@ export const HI_WORKFLOW: Record<string, string> = {
   "Not sent: {r}": "भेजा नहीं गया: {r}", "Waiting for her answer": "उनके जवाब का इंतज़ार", "Allowed once": "एक बार की अनुमति", "Always allowed": "हमेशा की अनुमति", "She chose Not now": "उन्होंने 'अभी नहीं' चुना",
   "Checked against {m}'s consent, right now.": "अभी, {m} की सहमति से जाँचा गया।", "No family members are linked.": "कोई परिवार का सदस्य जुड़ा नहीं है।", "Message": "संदेश",
   "alerts ON": "अलर्ट चालू", "alerts OFF": "अलर्ट बंद", "OFF": "बंद", "Message sent to {n}.": "{n} को संदेश भेजा गया।", "Send message": "संदेश भेजें",
+  "Your message": "आपका संदेश", "Write a short, respectful message...": "एक छोटा, सम्मानजनक संदेश लिखें...", "Keep it respectful. Avoid sharing her health details, scores or a diagnosis.": "सम्मानजनक रखें। उनकी स्वास्थ्य जानकारी, स्कोर या निदान साझा करने से बचें।",
+  "Use a template instead": "इसके बजाय एक टेम्पलेट उपयोग करें", "Write my own message instead": "इसके बजाय अपना संदेश लिखें",
   "{m} has been asked. Her answer is final.": "{m} से पूछ लिया गया है। उनका जवाब अंतिम है।", "Ask {m}": "{m} से पूछें",
   "Not asked during a safety case. Follow the crisis protocol: 112 and Tele-MANAS 14416.": "सुरक्षा के केस में पूछा नहीं जाता। संकट प्रोटोकॉल अपनाएँ: 112 और टेली-मानस 14416।",
   "Messages use fixed neutral wording. Nothing about her health is ever sent.": "संदेश तय, तटस्थ शब्दों में होते हैं। उनके स्वास्थ्य के बारे में कुछ नहीं भेजा जाता।",
@@ -52,7 +54,7 @@ export const HI_WORKFLOW: Record<string, string> = {
   "See what they have done": "देखें उन्होंने क्या किया", "What my care team did": "मेरी केयर टीम ने क्या किया", "Who looked at your record, who called you, and who was told. In plain words, nothing more.": "किसने आपका रिकॉर्ड देखा, किसने कॉल किया और किसे बताया गया। सरल शब्दों में, इससे ज़्यादा कुछ नहीं।",
   "Who looked, who called, who was told.": "किसने देखा, किसने कॉल किया, किसे बताया गया।", "Transparency": "पारदर्शिता",
   // priority and the queue
-  "Next routine check": "अगली नियमित जाँच", "overdue by {t}": "{t} की देरी", "due in {t}": "{t} में देय", "Draft clinical rules, awaiting clinician sign-off": "मसौदा चिकित्सकीय नियम, चिकित्सक की मंज़ूरी बाकी",
+  "Next routine check": "अगली नियमित जाँच", "overdue by {t}": "{t} की देरी", "due in {t}": "{t} में देय",
   "Note": "नोट", "Why": "क्यों", "Opens the case": "केस खुलता है", "Action queue": "कार्रवाई कतार", "Overdue": "देर हो चुकी",
   "One card per case, most urgent first, each with the one thing to do next.": "हर केस का एक कार्ड, सबसे ज़रूरी पहले, हर एक में अगला एक काम।",
   "Call & log outcome": "कॉल करें और नतीजा दर्ज करें", "Save": "सहेजें", "Could not save. Please try again.": "सहेजा नहीं जा सका। कृपया दोबारा कोशिश करें।",

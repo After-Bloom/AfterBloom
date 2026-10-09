@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import * as m from "motion/react-m";
 import { animate, useInView, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from "motion/react";
-import { ArrowRight, ChevronDown, Flower2, Moon, Phone, Sun } from "lucide-react";
+import { ArrowRight, CalendarCheck, ChevronDown, Flower2, Moon, Phone, Sun } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { HOME_BY_ROLE } from "@/lib/demo";
-import { FEATURES } from "@/lib/features";
+import { FEATURES, type Feature } from "@/lib/features";
 import { useTr } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { ease, rise, spring, stagger, tap } from "@/lib/motion";
@@ -18,6 +18,9 @@ import { Family } from "./Family";
 import { STORY, StopButtons, StopCard, StopOverlay, TINT } from "./JourneyParts";
 
 const CARDS = ["symptoms", "checkin", "care", "circles", "family"] as const;
+// Daily check-in is not in the signed-in nav (it already has its own home-page card), but the landing page still
+// pitches it to visitors who have not signed up yet, so it keeps its own small entry here.
+const CHECKIN_CARD: Feature = { href: "/checkin", key: "checkin", title: "Daily check-in", desc: "30 seconds. Mood, sleep, danger signs.", icon: CalendarCheck, roles: ["mother"] };
 
 function useMediaQuery(q: string) {
   const [v, setV] = useState(false);
@@ -160,7 +163,7 @@ export function Landing() {
           <h2 id="does-h" className="mx-auto max-w-3xl text-center text-3xl md:text-4xl">{tr("What AfterBloom does")}</h2>
           <m.ul variants={stagger()} initial="hidden" whileInView="show" viewport={view} className="mx-auto mt-10 grid max-w-6xl gap-4 sm:grid-cols-2 lg:grid-cols-6">
             {CARDS.map((k, i) => {
-              const f = FEATURES.find((x) => x.key === k)!;
+              const f = k === "checkin" ? CHECKIN_CARD : FEATURES.find((x) => x.key === k)!;
               return (
                 <m.li key={k} variants={rise} whileHover={{ y: -4, transition: spring.snappy }} whileTap={{ scale: 0.98, transition: spring.snappy }} className={i < 3 ? "lg:col-span-2" : "lg:col-span-3"}>
                   <Link href={f.href} className="card flex h-full flex-col gap-3 !p-6">

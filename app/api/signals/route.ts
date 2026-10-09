@@ -7,6 +7,7 @@ import { backfillCases, mapCase } from "@/lib/cases/attach";
 import { runChecks } from "@/lib/workflow/engine";
 import { notify } from "@/lib/server/notify";
 import { visibleCases } from "@/lib/signals/access";
+import { blurReasons, blurSensitive } from "@/lib/signals/blur";
 import type { PatientSignals } from "@/lib/types/cases";
 
 // The professional's view of related alerts: for each of their patients, her signals from the last 14 days (filtered by what she shares)
@@ -52,8 +53,8 @@ export async function GET() {
     const gate = await canProSeeMother(admin, user.id, l.mother_id);
     if (!gate.matched) return null;
     const mine = (rows ?? []).filter((r: any) => r.mother_id === l.mother_id).map(mapSignal);
-    const signals = filterForPro(mine, gate.shares);
-    const cases = visibleCases((caseRows ?? []).filter((c: any) => c.mother_id === l.mother_id).map(mapCase), gate.shares);
+    const signals = blurSensitive(filterForPro(mine, gate.shares));
+    const cases = visibleCases((caseRows ?? []).filter((c: any) => c.mother_id === l.mother_id).map(mapCase), gate.shares).map((c) => ({ ...c, priorityReasons: blurReasons(c.priorityReasons) }));
     const owners: PatientSignals["owners"] = {};
     for (const c of new Set(signals.map((s) => s.concern))) owners[c] = ownerOf(ctx, l.mother_id, c);
     const birth = l.mothers?.birth_date as string | undefined;

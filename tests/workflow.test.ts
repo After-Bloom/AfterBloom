@@ -219,7 +219,23 @@ test("a family message goes only to someone she allowed, from a fixed neutral te
   assert.deepEqual(t.sent.map((s) => [s.to, s.title, s.body]), [["rohan-user", "AfterBloom", "Please call Priya and check on her today"]]);
   assert.ok(!/blood|pressure|red|hospital|case|score/i.test(t.sent[0].body!), "nothing clinical can leak");
   assert.equal(t.tables.case_actions.at(-1)!.action_type, "family_message");
-  assert.equal(t.tables.audit_log.at(-1)!.action, "Sent Rohan a 'please call' message");
+  assert.equal(t.tables.audit_log.at(-1)!.action, "Sent Rohan a message");
+});
+
+test("a doctor can write her own words instead of the template; consent and the audit trail work the same way", async () => {
+  const t = setup();
+  const id = await story(t);
+  await sendFamilyMessage(t.client, { caseId: id, actor: MEHTA, memberId: "rohan", template: "please_call", customText: "  Could you check on Priya this evening?  ", notify: t.notify, now: NOW });
+  assert.deepEqual(t.sent.map((s) => [s.to, s.body]), [["rohan-user", "Could you check on Priya this evening?"]]);
+  assert.equal(t.tables.case_actions.at(-1)!.detail.customText, "Could you check on Priya this evening?");
+  assert.equal(t.tables.audit_log.at(-1)!.action, "Sent Rohan a message");
+});
+
+test("a custom message to someone she has not allowed is refused, same as a template message", async () => {
+  const t = setup();
+  const id = await story(t);
+  await assert.rejects(sendFamilyMessage(t.client, { caseId: id, actor: MEHTA, memberId: "kamla", template: "please_call", customText: "Please call Priya", notify: t.notify }), (e: WorkflowError) => e.code === "alerts_off");
+  assert.equal(t.sent.length, 0);
 });
 
 test("Kamla's alerts are OFF: the message is refused and nothing is sent", async () => {

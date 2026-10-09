@@ -6,6 +6,7 @@ import { OUTCOMES, WINDOW_MINUTES, computePriority, historyMatches, settle, RANK
 import { FAMILY_TEMPLATES, OUTCOMES_FOR, auditSentence, type ActionType, type TemplateId } from "./playbook.ts";
 import { canAsk, canSend, snapshotOf, type ConsentSnapshot, type FamilyMember, type RequestState } from "./family.ts";
 import { ladderLevel } from "./escalation.ts";
+import { effectiveShares } from "../consent.ts";
 
 // The workflow, applied to the database: work out each case's priority, record what a professional does (three records written together),
 // tell family only under her consent, ask her when she has said no, and climb the escalation ladder when nobody picks a case up.
@@ -88,12 +89,13 @@ export async function recomputeCase(admin: SupabaseClient, caseId: string, opts:
 // ---------- her consent, now ----------
 async function consentOf(admin: SupabaseClient, motherId: string) {
   const [{ data: m }, { data: fam }, { data: p }] = await Promise.all([
-    admin.from("mothers").select("consent_share_pro, consent_emergency_alert").eq("id", motherId).maybeSingle(),
+    admin.from("mothers").select("consent_share_pro, consent_emergency_alert, sharing_paused_until").eq("id", motherId).maybeSingle(),
     admin.from("family_members").select("id, name, relation, sees_alerts, user_id, status").eq("mother_id", motherId).neq("status", "removed"),
     admin.from("profiles").select("full_name").eq("id", motherId).maybeSingle(),
   ]);
   const members = (fam ?? []).map((f: any) => ({ id: f.id as string, name: f.name as string, relation: f.relation as string, alerts: !!f.sees_alerts, userId: (f.user_id ?? null) as string | null }));
-  const shares = !!(m as any)?.consent_share_pro, emergency = !!(m as any)?.consent_emergency_alert;
+  // a pause (B8) works exactly like switching consent_share_pro off for a while; family alert consent is a separate switch and is untouched by it
+  const shares = effectiveShares(!!(m as any)?.consent_share_pro, (m as any)?.sharing_paused_until ?? null), emergency = !!(m as any)?.consent_emergency_alert;
   return { shares, emergency, members, motherName: ((p as any)?.full_name as string) ?? "", snapshot: snapshotOf(shares, emergency, members) as ConsentSnapshot };
 }
 export { consentOf };
@@ -149,10 +151,17 @@ export async function recordAction(admin: SupabaseClient, p: ActionParams): Prom
 }
 
 // ---------- telling family, only under her consent ----------
-export async function sendFamilyMessage(admin: SupabaseClient, p: { caseId: string; actor: Actor; memberId: string; template: TemplateId; notify: Notify; lang?: "en" | "hi"; now?: number }) {
+const CUSTOM_MESSAGE_MAX = 300;
+
+/**
+ * `customText`, when given, replaces the fixed template. Her consent is still checked exactly the same way,
+ * and the send is still recorded the same way; only the wording stops being limited to the three templates.
+ */
+export async function sendFamilyMessage(admin: SupabaseClient, p: { caseId: string; actor: Actor; memberId: string; template: TemplateId; customText?: string | null; notify: Notify; lang?: "en" | "hi"; now?: number }) {
   const g = await gather(admin, p.caseId);
   if (!g) throw new WorkflowError("not_found");
   if (!(p.template in FAMILY_TEMPLATES)) throw new WorkflowError("bad_template");
+  const custom = p.customText?.trim().slice(0, CUSTOM_MESSAGE_MAX) || null;
   const cs = await consentOf(admin, g.c.motherId);                         // read now, not from what the screen showed
   const member = cs.members.find((m) => m.id === p.memberId);
   if (!member) throw new WorkflowError("no_member");
@@ -161,10 +170,10 @@ export async function sendFamilyMessage(admin: SupabaseClient, p: { caseId: stri
   if (check.ok === false) throw new WorkflowError(check.reason, `Not sent: ${check.reason}`);
   if (!member.userId) throw new WorkflowError("not_joined", "That person has not joined the family circle yet");
 
-  const body = FAMILY_TEMPLATES[p.template][p.lang ?? "en"](first(cs.motherName));
-  await p.notify(member.userId, { mother_id: g.c.motherId, kind: "support", title: "AfterBloom", body, url: "/family-view" });   // neutral title; the message itself has no clinical content
+  const body = custom ?? FAMILY_TEMPLATES[p.template][p.lang ?? "en"](first(cs.motherName));
+  await p.notify(member.userId, { mother_id: g.c.motherId, kind: "support", title: "AfterBloom", body, url: "/family-view" });   // neutral title
   if (check.via === "allow_once" && req) await admin.from("consent_requests").update({ used_at: new Date(p.now ?? Date.now()).toISOString() }).eq("id", req.id);
-  return recordAction(admin, { caseId: p.caseId, actor: p.actor, type: "family_message", detail: { familyMemberId: member.id, familyName: member.name, template: p.template, via: check.via }, now: p.now });
+  return recordAction(admin, { caseId: p.caseId, actor: p.actor, type: "family_message", detail: { familyMemberId: member.id, familyName: member.name, template: p.template, via: check.via, ...(custom ? { customText: custom } : {}) }, now: p.now });
 }
 
 // ---------- asking her ----------

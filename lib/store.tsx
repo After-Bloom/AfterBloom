@@ -19,16 +19,15 @@ export type Flag = { id: string; date: string; kind: "q10" | "red" | "epds" | "s
 export type FamilyMember = { id: string; name: string; relation: string; code: string; status: "invited" | "active" | "removed"; sees: { alerts: boolean; trends: boolean; weekly: boolean } };
 export type Booking = { id: string; proId: string; proName: string; proTitle: string; when: string; room: string; status: "booked" | "done" | "cancelled" };
 export type Alert = { id: string; at: string; text: string; title: string; body: string; kind: string; read: boolean };
-export type Audit = { at: string; who: string; what: string };
 
 export type State = {
   lang: Lang;
   mother: { name: string; babyName: string; birth: string; delivery: string; city: string; babySex: "boy" | "girl" | null; phone: string; birthWeightKg: number | null };
   checkins: Checkin[]; symptomLogs: SymptomLog[]; epds: EpdsResult[]; flags: Flag[];
   family: FamilyMember[]; shifts: Record<string, string>; partnerScreens: { date: string; yes: number }[];
-  consent: { emergencyAlert: boolean; shareWithPro: boolean; familyNote: boolean; emergencyContact: string; emergencyPhone: string; cloudMatch: boolean | null; sms: boolean };
+  consent: { emergencyAlert: boolean; shareWithPro: boolean; familyNote: boolean; emergencyContact: string; emergencyPhone: string; cloudMatch: boolean | null; sms: boolean; sharingPausedUntil: string | null };
   bookings: Booking[]; vaccinesDone: string[]; milestonesDone: string[]; weights: { date: string; kg: number; cm?: number }[]; benefits: string[];
-  alerts: Alert[]; audit: Audit[];
+  alerts: Alert[];
   pinHash: string | null; neutralNotif: boolean; circleId: string | null;
   risk: Risk; babyLogs: BabyLog[];
 };
@@ -39,8 +38,8 @@ export const emptyState = (): State => ({
   lang: "en",
   mother: { name: "", babyName: "", birth: new Date().toISOString(), delivery: "Normal", city: "", babySex: null, phone: "", birthWeightKg: null },
   checkins: [], symptomLogs: [], epds: [], flags: [], family: [], shifts: {}, partnerScreens: [],
-  consent: { emergencyAlert: false, shareWithPro: true, familyNote: false, emergencyContact: "", emergencyPhone: "", cloudMatch: null, sms: false },
-  bookings: [], vaccinesDone: [], milestonesDone: [], weights: [], benefits: [], alerts: [], audit: [],
+  consent: { emergencyAlert: false, shareWithPro: true, familyNote: false, emergencyContact: "", emergencyPhone: "", cloudMatch: null, sms: false, sharingPausedUntil: null },
+  bookings: [], vaccinesDone: [], milestonesDone: [], weights: [], benefits: [], alerts: [],
   pinHash: null, neutralNotif: true, circleId: null, risk: {}, babyLogs: [],
 });
 

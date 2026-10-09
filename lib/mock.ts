@@ -44,7 +44,6 @@ export const DEMO_MOTHERS: DemoMother[] = [
 
 export const DEMO_STAFF = {
   moderator: { email: "moderator@demo.afterbloom.app", name: "Kavita (Bloom Buddy)", role: "moderator" },
-  asha: { email: "asha@demo.afterbloom.app", name: "Sunita Devi (ASHA)", role: "asha" },
   admin: { email: "admin@demo.afterbloom.app", name: "AfterBloom Admin", role: "admin" },
   rohan: { email: "rohan@demo.afterbloom.app", name: "Rohan Verma", role: "family" },
   kamla: { email: "kamla@demo.afterbloom.app", name: "Kamla Verma", role: "family" },

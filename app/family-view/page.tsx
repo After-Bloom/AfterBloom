@@ -12,7 +12,6 @@ import { MYTHS, SCRIPTS } from "@/lib/education-extra";
 import { PARTNER_QS } from "@/lib/epds";
 import { PSYCHOSIS_SIGNS } from "@/lib/symptoms";
 import { PageHead, Tabs, fmtTime, Disclaimer } from "@/components/ui";
-import { NightPlanner } from "@/components/NightPlanner";
 import { useTr } from "@/lib/i18n";
 import { rise, stagger } from "@/lib/motion";
 
@@ -55,7 +54,7 @@ export default function FamilyView() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <PageHead title={tr("Supporting {name}", { name: mom })} sub={tr("Hello {me}. Here is how to help {name} and {baby}.", { me: l.myName, name: mom, baby: l.babyName || tr("the baby") })} />
-      <Tabs value={tab} onChange={setTab} tabs={[{ id: "learn", label: "Learn" }, { id: "myths", label: "Myths & facts" }, { id: "say", label: "What to say" }, { id: "screen", label: "What I noticed" }, { id: "feeds", label: "Night feeds" }, { id: "alerts", label: s.alerts.length ? tr("Alerts ({n})", { n: s.alerts.filter((a) => !a.read).length }) : "Alerts" }, { id: "note", label: "This week" }]} />
+      <Tabs value={tab} onChange={setTab} tabs={[{ id: "learn", label: "Learn" }, { id: "myths", label: "Myths & facts" }, { id: "say", label: "What to say" }, { id: "screen", label: "What I noticed" }, { id: "alerts", label: s.alerts.length ? tr("Alerts ({n})", { n: s.alerts.filter((a) => !a.read).length }) : "Alerts" }, { id: "note", label: "This week" }]} />
 
       {tab === "learn" && (
         <m.div variants={stagger()} initial="hidden" animate="show" className="space-y-3">
@@ -112,8 +111,6 @@ export default function FamilyView() {
           {sent && <p role="status" className="text-sm text-ok">{tr("Thank you.")} {sent.told ? tr("Her care team will be told.") + " " : ""}{tr("Gentle next step: tell her you are there, and offer to go with her to a counsellor.")}</p>}
         </section>
       )}
-
-      {tab === "feeds" && <section className="card"><NightPlanner shifts={fv.shifts} me={l.myName.split(" ")[0]} owner={l.motherName} onToggle={(d, sl, who) => fv.toggleShift(d, sl, who)} /></section>}
 
       {tab === "alerts" && (
         <div className="space-y-3">

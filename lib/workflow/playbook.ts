@@ -105,7 +105,7 @@ export function auditSentence(type: ActionType, outcome: Outcome | null, detail:
       return outcome === "not_reached" ? "Tried to call her: could not reach her" : outcome === "reached_hospital" ? "Called her: reached her, she is going to hospital" : "Called her: reached her, advice given";
     case "book_session": return "Booked a session for her";
     case "refer": return "Referred her to a specialist";
-    case "family_message": return `Sent ${detail.familyName ?? "a family member"} a 'please call' message`;
+    case "family_message": return `Sent ${detail.familyName ?? "a family member"} a message`;
     case "monitor": return `Chose to keep watching${detail.reason && detail.reason in MONITOR_REASON_LABEL ? `: ${MONITOR_REASON_LABEL[detail.reason as keyof typeof MONITOR_REASON_LABEL].en.toLowerCase()}` : ""}`;
     case "resolve": return "Marked a case as resolved: seen by a doctor";
     case "acknowledge": return "Acknowledged a case";
