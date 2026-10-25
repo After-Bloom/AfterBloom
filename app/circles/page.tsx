@@ -51,7 +51,7 @@ export default function Circles() {
     <div className="mx-auto max-w-5xl space-y-5">
       <PageHead title="Bloom Circles" sub="A small, safe group of mothers who gave birth the same month as you." tag="Community" />
 
-      <div className="grid items-start gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           <section className="card flex flex-wrap items-center gap-4" aria-label={tr("Your circle")}>
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-plum-100 text-primary"><Users className="h-6 w-6" aria-hidden /></span>

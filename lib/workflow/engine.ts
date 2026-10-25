@@ -208,13 +208,14 @@ export async function runChecks(admin: SupabaseClient, p: { notify: Notify; now?
   // Only the cases the clock can change need a closer look: one with no priority yet, one past its due time, or an Immediate one nobody has picked up.
   // Everything else is left alone, so loading the queue stays quick however many cases there are.
   const watch = (open ?? []).filter((r: any) => !r.priority || (r.priority !== "P4" && r.due_by && new Date(r.due_by).getTime() < now) || (r.priority === "P1" && !r.acknowledged_at));
-  for (const r of watch) {
-    let c = await recomputeCase(admin, r.id, { now });
-    if (!c || c.status === "resolved") continue;
+  // each case only touches its own row (and the step claim below stops double sends), so they are worked out together, not one after another
+  await Promise.all(watch.map(async (r: any) => {
+    const c = await recomputeCase(admin, r.id, { now });
+    if (!c || c.status === "resolved") return;
     const level = ladderLevel({ priority: c.priority as Priority | null, status: c.status, acknowledgedAt: c.acknowledgedAt, prioritySince: c.prioritySince }, now);
-    if (level <= Math.max(1, c.escalationLevel)) continue;
+    if (level <= Math.max(1, c.escalationLevel)) return;
     const { data: moved } = await admin.from("cases").update({ escalation_level: level }).eq("id", c.id).lt("escalation_level", level).select("id");   // claim the step first, so two runs cannot both send
-    if (!moved?.length) continue;
+    if (!moved?.length) return;
     escalated++;
     await admin.from("case_events").insert({ case_id: c.id, type: "escalated", actor_role: "system", detail: { level }, at: new Date(now).toISOString() });
     const who = level === 2
@@ -222,6 +223,6 @@ export async function runChecks(admin: SupabaseClient, p: { notify: Notify; now?
       : ((await admin.from("profiles").select("id").eq("role", "admin")).data ?? []).map((x: any) => x.id as string);
     if (level === 2) await Promise.all(who.map((id) => admin.from("pro_patients").upsert({ pro_id: id, mother_id: c!.motherId })));   // the backup must be able to open her case
     await Promise.all(who.map((id) => p.notify(id, { mother_id: c.motherId, kind: "emergency", title: level === 2 ? "URGENT: a case has not been picked up" : "URGENT: admin desk, a case is still not picked up", body: level === 2 ? "You are the on-call backup. Please open the action queue." : "Nobody has acknowledged an Immediate case for 30 minutes.", url: "/pro/alerts" })));
-  }
+  }));
   return { checked: open?.length ?? 0, escalated };
 }

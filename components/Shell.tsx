@@ -77,7 +77,8 @@ function Inner({ children }: { children: React.ReactNode }) {
             <Menu className={`absolute h-6 w-6 transition-all duration-300 ${nav ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"}`} />
             <X className={`absolute h-6 w-6 transition-all duration-300 ${nav ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"}`} />
           </button>
-          <Link href={signedIn ? home : "/"} className="flex min-w-0 items-center gap-1.5 font-serif text-xl font-bold text-plum-800 sm:text-2xl"><Flower2 className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7" aria-hidden /><span className="truncate">AfterBloom</span></Link>
+          {/* signed in, the action buttons fill a phone-width header, so the name shows from lg up and the flower stands alone below that */}
+          <Link href={signedIn ? home : "/"} aria-label="AfterBloom" className="flex min-w-0 items-center gap-1.5 font-serif text-xl font-bold text-plum-800 sm:text-2xl"><Flower2 className="h-6 w-6 shrink-0 text-primary sm:h-7 sm:w-7" aria-hidden /><span className={signedIn ? "hidden truncate lg:inline" : "truncate"}>AfterBloom</span></Link>
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
             {ThemeBtn("hidden md:flex")}
             <LangToggle />
